@@ -1,0 +1,180 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@model EmployeeDashboardViewModel
+@{
+    ViewData["Title"] = "Jadwal Saya";
+    ViewData["HideBreadcrumbs"] = true;
+}
+
+<!-- Welcome Banner -->
+<div class="admin-card mb-4" style="background: linear-gradient(135deg, #0c1322 0%, #0f766e 100%); border: none; color: #ffffff;">
+    <div class="admin-card-body p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="brand-icon-box" style="width: 50px; height: 50px; font-size: 1.5rem; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);">
+                <i class="fas fa-user-tie text-white"></i>
+            </div>
+            <div>
+                <h3 class="fw-bold mb-1" style="color:#ffffff; font-size:1.3rem;">Selamat Datang, @Model.EmployeeName!</h3>
+                <p class="mb-0 text-white-50" style="font-size:0.83rem;">
+                    Portal mandiri karyawan. Pantau jadwal giliran shift harian dan riwayat permohonan izin Anda.
+                </p>
+            </div>
+        </div>
+        <div>
+            <a href="/LeaveRequest/Create" class="btn-primary-admin" style="background:#ffffff; color:#0f766e !important; font-weight:700;">
+                <i class="fas fa-plus"></i> Ajukan Izin / Cuti
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- My Schedule Section -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <div>
+            <h3 class="admin-card-title">
+                <i class="fas fa-calendar-days text-teal"></i> Jadwal Shift Saya Periode Ini
+            </h3>
+            <p class="admin-card-desc">Jadwal resmi giliran kerja yang telah disetujui Manager</p>
+        </div>
+        @if(Model.ActiveSchedulePeriod != null)
+        {
+            <span class="status-pill pill-active">
+                <span class="dot-indicator"></span>@Model.ActiveSchedulePeriod.PeriodName
+            </span>
+        }
+    </div>
+    <div class="admin-card-body">
+        @if(Model.MySchedule != null && Model.MySchedule.Any())
+        {
+            <div class="d-flex flex-nowrap overflow-auto gap-2 pb-2">
+                @foreach(var shift in Model.MySchedule)
+                {
+                    var isOff = shift.ShiftCode == "OFF";
+                    var cellClass = "shift-" + (shift.IsSick ? "SICK" : shift.ShiftCode);
+                    var isToday = shift.Date.Date == DateTime.Today;
+                    
+                    <div class="text-center p-2 rounded-3 flex-shrink-0" style="width: 105px; background:#ffffff; border: @(isToday ? "2px solid #0f766e" : "1px solid #e2e8f0"); box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                        <div class="text-muted" style="font-size:0.72rem; font-weight:600; text-transform:uppercase;">
+                            @shift.Date.ToString("ddd", new System.Globalization.CultureInfo("id-ID"))
+                        </div>
+                        <div style="font-size:1.15rem; font-weight:800; color:#0f172a;">
+                            @shift.Date.ToString("dd")
+                        </div>
+                        <small class="text-muted d-block mb-2" style="font-size:0.7rem;">@shift.Date.ToString("MMM")</small>
+                        <div class="py-1 px-2 rounded-2 @cellClass" style="font-size:0.78rem; font-weight:700;">
+                            @(shift.IsSick ? "SAKIT" : shift.ShiftCode)
+                        </div>
+                        @if (isToday)
+                        {
+                            <span class="badge bg-dark mt-1" style="font-size:0.6rem;">Hari Ini</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted" style="font-size:0.83rem;">
+                <i class="fas fa-calendar-xmark fa-2x d-block mb-2 opacity-50"></i>
+                Belum ada jadwal yang dipublikasikan untuk periode kerja saat ini.
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Announcements Column -->
+    <div class="col-lg-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <div>
+                    <h3 class="admin-card-title">
+                        <i class="fas fa-bullhorn text-danger"></i> Pengumuman Terbaru
+                    </h3>
+                    <p class="admin-card-desc">Informasi internal penting dari manajemen</p>
+                </div>
+            </div>
+            <div class="admin-card-body p-0">
+                @if(Model.RecentAnnouncements != null && Model.RecentAnnouncements.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach(var ann in Model.RecentAnnouncements)
+                        {
+                            var pillClass = ann.Priority == "Urgent" ? "pill-inactive" : (ann.Priority == "Important" ? "pill-pending" : "pill-active");
+                            <div class="list-group-item p-3" style="border-bottom:1px solid #f1f5f9;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong style="font-size:0.86rem; color:#0f172a;">@ann.Title</strong>
+                                    <span class="status-pill @pillClass" style="font-size:0.68rem;">@ann.Priority</span>
+                                </div>
+                                <p class="text-muted mb-1" style="font-size:0.8rem; line-height:1.4;">@ann.Content</p>
+                                <small class="text-muted" style="font-size:0.72rem;">
+                                    <i class="fas fa-clock me-1"></i>@ann.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                                </small>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted" style="font-size:0.83rem;">
+                        <i class="fas fa-inbox fa-2x d-block mb-2 opacity-50"></i>
+                        Belum ada pengumuman terbaru.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- My Leave Requests Column -->
+    <div class="col-lg-6">
+        <div class="admin-card h-100">
+            <div class="admin-card-header">
+                <div>
+                    <h3 class="admin-card-title">
+                        <i class="fas fa-envelope-open-text text-teal"></i> Riwayat Pengajuan Izin Saya
+                    </h3>
+                    <p class="admin-card-desc">Status permohonan izin, cuti, dan sakit terakhir</p>
+                </div>
+                <a href="/LeaveRequest/Index" class="btn-secondary-admin" style="font-size:0.75rem; padding:4px 10px;">
+                    Lihat Semua <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="admin-card-body p-0">
+                @if(Model.MyRecentLeaves != null && Model.MyRecentLeaves.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach(var leave in Model.MyRecentLeaves)
+                        {
+                            var pillClass = leave.Status == "Approved" ? "pill-active" : (leave.Status == "Rejected" ? "pill-inactive" : "pill-pending");
+                            var statusLabel = leave.Status == "Approved" ? "Disetujui" : (leave.Status == "Rejected" ? "Ditolak" : "Pending");
+
+                            <a href="/LeaveRequest/Detail/@leave.Id" class="list-group-item list-group-item-action p-3" style="border-bottom:1px solid #f1f5f9;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="code-tag" style="font-weight:600;">@leave.LeaveType</span>
+                                            <span style="font-size:0.82rem; font-weight:600; color:#0f172a;">
+                                                <i class="fas fa-calendar-day me-1 text-teal"></i>@leave.RequestDate.ToString("dd MMM yyyy")
+                                            </span>
+                                        </div>
+                                        <small class="text-muted d-block" style="font-size:0.75rem;">@leave.Reason</small>
+                                    </div>
+                                    <div>
+                                        <span class="status-pill @pillClass"><span class="dot-indicator"></span>@statusLabel</span>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted" style="font-size:0.83rem;">
+                        <i class="fas fa-file-circle-question fa-2x d-block mb-2 opacity-50"></i>
+                        Belum ada permohonan izin yang diajukan.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

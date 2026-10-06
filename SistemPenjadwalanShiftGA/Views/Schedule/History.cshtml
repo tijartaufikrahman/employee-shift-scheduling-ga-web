@@ -1,0 +1,345 @@
+@using SistemPenjadwalanShiftGA.Models.Entities
+@model IEnumerable<SchedulePeriod>
+@{
+    ViewData["Title"] = "Riwayat Jadwal";
+    var today = DateTime.UtcNow.AddHours(7).Date;
+}
+
+<style>
+    .hover-teal:hover {
+        color: #0f766e !important;
+        text-decoration: underline !important;
+    }
+    #historyTable th,
+    #historyTable td {
+        white-space: nowrap !important;
+    }
+    #historyTable thead th {
+        background: #f8fafc;
+        border-top: none;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 11px 14px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #475569;
+        white-space: nowrap !important;
+    }
+    #historyTable tbody td {
+        padding: 12px 14px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.83rem;
+        white-space: nowrap !important;
+    }
+    #historyTable tbody tr:hover td {
+        background-color: #f8fafc;
+    }
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 12px;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 5px 12px;
+        font-size: 0.82rem;
+        outline: none;
+        transition: all 0.2s;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #0d9488;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    }
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.82rem;
+    }
+    .history-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        text-decoration: none !important;
+    }
+    .history-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+    }
+    .history-action-view {
+        color: #0284c7;
+        background: #f0f9ff;
+        border-color: #bae6fd;
+    }
+    .history-action-view:hover {
+        background: #0284c7;
+        color: #ffffff !important;
+        border-color: #0284c7;
+    }
+    .history-action-pdf {
+        color: #dc2626;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+    .history-action-pdf:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+    }
+    .history-action-publish {
+        color: #0f766e;
+        background: #f0fdfa;
+        border-color: #99f6e4;
+    }
+    .history-action-publish:hover {
+        background: #0f766e;
+        color: #ffffff !important;
+        border-color: #0f766e;
+    }
+    .history-action-delete {
+        color: #b91c1c;
+        background: #fff1f2;
+        border-color: #fecdd3;
+    }
+    .history-action-delete:hover {
+        background: #e11d48;
+        color: #ffffff !important;
+        border-color: #e11d48;
+    }
+</style>
+
+<div class="admin-card mb-4" style="border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.04); background: #ffffff;">
+    <div class="py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; background: #f0fdfa; color: #0f766e; border-radius: 10px; font-size: 1.15rem; border: 1px solid #ccfbf1;">
+                <i class="fas fa-clock-rotate-left"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 1.05rem;">Riwayat Penjadwalan Kerja</h5>
+                <p class="text-muted mb-0 mt-0.5" style="font-size: 0.82rem;">Daftar seluruh periode jadwal kerja operasional karyawan yang telah disusun dan tersimpan dalam sistem.</p>
+            </div>
+        </div>
+        <div>
+            <span class="badge bg-light text-secondary border px-3 py-2" style="font-size: 0.8rem; font-weight: 600;">
+                <i class="fas fa-calendar-days text-teal me-1.5"></i> Total @(Model?.Count() ?? 0) Periode
+            </span>
+        </div>
+    </div>
+    <div class="admin-table-container p-3 table-responsive" style="background: #ffffff; overflow-x: auto;">
+        <table id="historyTable" class="admin-table table table-hover align-middle mb-0 w-100 text-nowrap">
+            <thead>
+                <tr>
+                    <th style="width:60px;" class="text-center">NO</th>
+                    <th style="width:145px;">KODE JADWAL</th>
+                    <th>NAMA PERIODE</th>
+                    <th>RENTANG TANGGAL</th>
+                    <th>DURASI</th>
+                    <th>STATUS OPERASIONAL</th>
+                    <th>DISUSUN PADA</th>
+                    <th style="width: 1%; white-space: nowrap; text-align: center;">AKSI</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int rowNo = 1; }
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var period in Model.OrderByDescending(p => p.StartDate))
+                    {
+                        var daysCount = (period.EndDate.Date - period.StartDate.Date).Days + 1;
+                        var displayDuration = $"{daysCount} Hari";
+                        var pOngoing = period.IsPublished && today >= period.StartDate.Date && today <= period.EndDate.Date;
+                        var pPast = period.IsPublished && today > period.EndDate.Date;
+                        var pFuture = period.IsPublished && today < period.StartDate.Date;
+                        var scheduleCodeDisplay = string.IsNullOrEmpty(period.ScheduleCode) ? $"SCH-{period.Id:D4}" : period.ScheduleCode;
+
+                        <tr>
+                            <td class="text-center fw-bold text-muted" style="font-size: 0.82rem;" data-order="@rowNo">@(rowNo++)</td>
+                            <td>
+                                <span class="badge" style="background: #f0fdfa; color: #0f766e; border: 1px solid #ccfbf1; font-family: monospace; font-size: 0.8rem; font-weight: 700; padding: 4px 8px;">
+                                    @scheduleCodeDisplay
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-inline-flex align-items-center gap-2">
+                                    <a href="/Schedule/Detail/@period.Id" class="fw-bold text-slate-900 text-decoration-none hover-teal" style="font-size: 0.88rem;">
+                                        @period.PeriodName
+                                    </a>
+                                    <span class="status-pill @(period.IsPublished ? "pill-role" : "pill-pending")" style="font-size: 0.68rem; padding: 1.5px 7px;">
+                                        @(period.IsPublished ? "Resmi Berlaku" : "Draft")
+                                    </span>
+                                </div>
+                            </td>
+                            <td data-order="@period.StartDate.ToString("yyyyMMdd")">
+                                <span class="fw-semibold text-slate-800" style="font-size: 0.83rem;">
+                                    @period.StartDate.ToString("dd MMM yyyy") – @period.EndDate.ToString("dd MMM yyyy")
+                                </span>
+                            </td>
+                            <td data-order="@daysCount">
+                                <span class="code-tag" style="font-size: 0.76rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                    @displayDuration
+                                </span>
+                            </td>
+                            <td data-order="@(pOngoing ? 1 : (pFuture ? 2 : (!period.IsPublished ? 3 : 4)))">
+                                @if (pOngoing)
+                                {
+                                    <span class="status-pill pill-active" style="font-size: 0.73rem; padding: 2px 8px;">
+                                        <span class="dot-indicator"></span>Sedang Berjalan
+                                    </span>
+                                }
+                                else if (pPast)
+                                {
+                                    <span class="status-pill" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.73rem; padding: 2px 8px;">
+                                        <i class="fas fa-check-circle text-success me-1"></i>Selesai
+                                    </span>
+                                }
+                                else if (pFuture)
+                                {
+                                    <span class="status-pill" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 0.73rem; padding: 2px 8px;">
+                                        <i class="fas fa-calendar-check text-primary me-1"></i>Mendatang
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill pill-pending" style="font-size: 0.73rem; padding: 2px 8px;">
+                                        <span class="dot-indicator"></span>Draft
+                                    </span>
+                                }
+                            </td>
+                            <td data-order="@(period.GeneratedAt?.ToString("yyyyMMddHHmmss") ?? "")" style="font-size: 0.8rem; color:#64748b;">
+                                <i class="far fa-clock me-1 text-muted"></i>
+                                @(period.GeneratedAt?.ToString("dd MMM yyyy HH:mm") ?? "-")
+                            </td>
+                            <td class="text-center" style="white-space: nowrap;">
+                                <div class="d-inline-flex align-items-center gap-2">
+                                    <a href="/Schedule/Detail/@period.Id" class="history-action-btn history-action-view" title="Lihat Detail Jadwal">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/Schedule/ExportPdf/@period.Id" target="_blank" class="history-action-btn history-action-pdf" title="Lihat PDF di Tab Baru">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                    @if (!period.IsPublished)
+                                    {
+                                        <button type="button" class="history-action-btn history-action-publish" onclick="publishSchedule('@period.Id')" title="Publikasikan Jadwal">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    }
+                                    <button type="button" class="history-action-btn history-action-delete" onclick="deleteSchedule('@period.Id', @(period.IsPublished ? "true" : "false"))" title="Hapus Jadwal">
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<form id="antiForgeryForm">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var table = $('#historyTable').DataTable({
+                autoWidth: false,
+                pageLength: 10,
+                order: [[3, 'desc']], // Order by date range descending
+                columnDefs: [
+                    { orderable: true, targets: [0] },
+                    { orderable: false, targets: [7] },
+                    { searchable: false, targets: [7] }
+                ],
+                language: {
+                    search: "Cari riwayat:",
+                    lengthMenu: "Tampilkan _MENU_ baris",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ periode",
+                    infoEmpty: "Tidak ada data riwayat penjadwalan",
+                    infoFiltered: "(disaring dari _MAX_ total data)",
+                    zeroRecords: "Tidak ada periode jadwal yang sesuai",
+                    paginate: {
+                        first: "Pertama",
+                        last: "Terakhir",
+                        next: "»",
+                        previous: "«"
+                    }
+                }
+            });
+        });
+
+        function publishSchedule(id) {
+            Swal.fire({
+                title: 'Publikasikan Jadwal?',
+                text: "Jadwal yang dipublish akan terlihat oleh seluruh karyawan dan resmi berlaku.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0f766e',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Publikasikan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/Publish/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Jadwal kerja resmi telah dipublikasikan.',
+                                timer: 1800,
+                                showConfirmButton: false
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function deleteSchedule(id, isPublished) {
+            var title = isPublished ? 'Hapus Jadwal Resmi?' : 'Hapus Draft Jadwal?';
+            var text = isPublished 
+                ? 'Jadwal ini sudah dipublikasikan. Menghapus jadwal akan menghapus seluruh detail penugasan karyawan terkait.'
+                : 'Draft jadwal akan dihapus permanen dari sistem.';
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/Delete/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: 'Jadwal telah berhasil dihapus.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

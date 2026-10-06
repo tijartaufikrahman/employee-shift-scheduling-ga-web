@@ -1,0 +1,38 @@
+@model SistemPenjadwalanShiftGA.Models.ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Sistem Penjadwalan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #eef7f5; padding: 20px; }
+        .card { max-width: 460px; width: 100%; background: #fff; border-radius: 20px; padding: 44px 36px; text-align: center; box-shadow: 0 10px 40px rgba(15,23,42,.08); }
+        .icon-wrap { width: 72px; height: 72px; background: linear-gradient(135deg,#fb923c,#ea580c); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .icon-wrap i { font-size: 32px; color: #fff; }
+        h1 { font-size: 22px; color: #0f172a; font-weight: 700; margin-bottom: 10px; }
+        p { color: #64748b; font-size: 13.5px; line-height: 1.7; }
+        .req-id { font-size: 11px; color: #94a3b8; margin-top: 12px; font-family: monospace; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; padding: 12px 28px; background: linear-gradient(135deg,#2dd4bf,#0d9488); color: #fff; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-wrap"><i class="fas fa-exclamation-triangle"></i></div>
+        <h1>Terjadi Kesalahan</h1>
+        <p>Maaf, terjadi kesalahan saat memproses permintaan Anda. Tim kami sedang menangani masalah ini.</p>
+        @if (Model?.ShowRequestId == true)
+        {
+            <div class="req-id">Request ID: @Html.DisplayFor(model => model.RequestId)</div>
+        }
+        <a href="/" class="btn"><i class="fas fa-home"></i> Kembali ke Beranda</a>
+    </div>
+</body>
+</html>

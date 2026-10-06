@@ -1,0 +1,237 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@using SistemPenjadwalanShiftGA.Models.Entities
+@model ScheduleMatrixViewModel
+@{
+    ViewData["Title"] = "Pratinjau Penjadwalan";
+    var shiftTypes = ViewBag.ShiftTypes as IEnumerable<ShiftType> ?? Enumerable.Empty<ShiftType>();
+    var token = ViewBag.PreviewToken as string ?? "";
+}
+
+<style>
+    .loading-overlay { 
+        position: fixed; 
+        inset: 0; 
+        background: rgba(12, 19, 34, 0.75); 
+        backdrop-filter: blur(4px); 
+        z-index: 9999; 
+        display: none; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        color: #ffffff;
+    }
+</style>
+
+<!-- Top Breadcrumb / Title Bar -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        @if (!string.IsNullOrEmpty(Model.ScheduleCode))
+        {
+            <span class="badge" style="background: #f0fdfa; color: #0f766e; border: 1px solid #ccfbf1; font-family: monospace; font-size: 0.82rem; font-weight: 700; padding: 4px 8px;">
+                Kode: @Model.ScheduleCode
+            </span>
+        }
+        <h4 class="fw-bold mb-0 text-slate-900" style="font-size:1.1rem;">
+            @Model.PeriodName
+        </h4>
+        <span class="status-pill pill-pending">
+            <span class="dot-indicator"></span>Draft Pratinjau
+        </span>
+        <span class="text-muted ms-2" style="font-size:0.82rem;">
+            (@Model.StartDate.ToString("dd MMMM yyyy") – @Model.EndDate.ToString("dd MMMM yyyy"))
+        </span>
+    </div>
+    <div>
+        <span class="badge bg-light text-dark border px-2.5 py-1.5" style="font-size:0.78rem;">
+            <i class="fas fa-users me-1 text-teal"></i> Total Karyawan: <strong>@Model.Rows.Count Orang</strong>
+        </span>
+    </div>
+</div>
+
+<!-- Notice Callout & Primary Action Banner (Posisi di Atas) -->
+<div class="admin-card p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style="background:#ffffff; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+    <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-wrapper stat-icon-teal flex-shrink-0" style="width:42px; height:42px; font-size:1.2rem; border-radius:10px;">
+            <i class="fas fa-clipboard-check"></i>
+        </div>
+        <div>
+            <strong class="d-block text-slate-900" style="font-size:0.92rem;">Pratinjau Hasil Penjadwalan Karyawan</strong>
+            <span class="text-muted" style="font-size:0.78rem;">
+                Verifikasi alokasi rotasi kerja shift karyawan sebelum disahkan. Klik <strong>"Simpan &amp; Publikasikan Resmi"</strong> untuk menerbitkan jadwal resmi ke sistem operasional.
+            </span>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <!-- Simpan & Publikasikan Resmi -->
+        <form asp-action="ConfirmSave" method="post" class="d-inline m-0">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="token" value="@token" />
+            <button type="submit" class="btn-primary-admin py-2 px-3.5" style="font-weight:700; font-size:0.84rem;">
+                <i class="fas fa-circle-check me-1.5"></i> Simpan &amp; Publikasikan Resmi
+            </button>
+        </form>
+
+        <!-- Optimasi Ulang (Algoritma Genetika) -->
+        <form asp-action="RerunPreview" method="post" class="d-inline m-0" id="rerunForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="token" value="@token" />
+            <button type="submit" class="btn-secondary-admin py-2 px-3" id="btnRerun" style="font-size:0.84rem; font-weight:600;" title="Jalankan ulang optimasi algoritma genetika untuk menghitung kombinasi rotasi shift alternatif">
+                <i class="fas fa-arrows-rotate me-1 text-teal"></i> Optimasi Ulang
+            </button>
+        </form>
+
+        <!-- Atur Parameter Penjadwalan -->
+        <a href="/Schedule/Generate" class="btn-secondary-admin py-2 px-3" style="font-size:0.84rem;" title="Kembali ke formulir untuk mengubah pengaturan dan tanggal">
+            <i class="fas fa-sliders me-1"></i> Atur Parameter
+        </a>
+
+        <!-- Batalkan Draft -->
+        <a href="/Schedule/DiscardPreview?token=@token" class="btn-danger-admin py-2 px-3" style="font-size:0.84rem;" title="Batalkan draf pratinjau ini">
+            <i class="fas fa-trash me-1"></i> Batalkan
+        </a>
+    </div>
+</div>
+
+<!-- Schedule Matrix Card -->
+<div class="admin-card mb-3">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="admin-card-title">Distribusi Penjadwalan Shift Karyawan</h3>
+            <p class="admin-card-desc">Distribusi penugasan giliran kerja harian seluruh karyawan operasional unit kerja.</p>
+        </div>
+        <span class="badge bg-light text-dark border px-2 py-1" style="font-size:0.75rem;">
+            Total Karyawan: <strong>@Model.Rows.Count Orang</strong>
+        </span>
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="matrix-table-container">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;">NO</th>
+                        <th class="emp-col">NAMA KARYAWAN</th>
+                        @foreach(var date in Model.Dates)
+                        {
+                            <th class="date-col">
+                                @date.ToString("ddd", new System.Globalization.CultureInfo("id-ID"))
+                                <small>@date.ToString("dd/MM")</small>
+                            </th>
+                        }
+                        <th style="min-width:75px; text-align:center;" title="Total Shift Kerja">TOTAL SHIFT</th>
+                        <th style="min-width:75px; text-align:center;" title="Total Hari Libur (OFF)">TOTAL LIBUR</th>
+                        <th style="min-width:75px; text-align:center;" title="Total Shift Malam">SHIFT MALAM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int prevRowNo = 1; }
+                    @foreach(var row in Model.Rows)
+                    {
+                        <tr>
+                            <td style="text-align:center; font-weight:600; color:#64748b; background:#f8fafc;">@(prevRowNo++)</td>
+                            <td class="emp-col">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="fw-bold">@row.NamaLengkap</span>
+                                    @if(row.Level == "Senior")
+                                    {
+                                        <span class="status-pill pill-role ms-2" style="font-size:9px; padding:1px 5px;">Sr</span>
+                                    }
+                                </div>
+                            </td>
+                            @for(int i = 0; i < Model.Dates.Count; i++)
+                            {
+                                var day = (i < row.Days.Count) ? row.Days[i] : null;
+                                var code = day?.ShiftCode ?? "OFF";
+                                var isOff = code == "OFF" || day?.Status == "Off";
+                                var cellClass = "shift-cell shift-" + code;
+                                if(day?.Status == "Sick") cellClass = "shift-cell shift-SICK";
+
+                                <td class="@cellClass">
+                                    @code
+                                </td>
+                            }
+                            <td class="fw-bold text-center" style="color:#0f172a; background:#f0fdfa; font-size:0.92rem;" title="Total Shift Kerja">
+                                @row.TotalShifts
+                            </td>
+                            <td class="fw-bold text-center" style="color:#0f766e; background:#f8fafc; font-size:0.88rem;" title="Total Hari Libur (OFF)">
+                                <span class="badge bg-light text-dark border px-2 py-0.5">@row.TotalOffDays</span>
+                            </td>
+                            <td class="fw-bold text-center" style="color:#7c3aed; background:#f5f3ff; font-size:0.88rem;" title="Total Shift Malam">
+                                @row.NightShifts
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Legend Card -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header py-2">
+        <h4 class="admin-card-title" style="font-size:0.85rem;">
+            <i class="fas fa-circle-info text-teal me-1.5"></i> Keterangan Kode Shift & Status Penugasan
+        </h4>
+    </div>
+    <div class="admin-card-body py-2.5">
+        <div class="d-flex flex-wrap align-items-center gap-3" style="font-size:0.8rem;">
+            @if (shiftTypes.Any())
+            {
+                foreach(var st in shiftTypes)
+                {
+                    var startStr = DateTime.Today.Add(st.StartTime).ToString("HH:mm");
+                    var endStr = DateTime.Today.Add(st.EndTime).ToString("HH:mm");
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="shift-@st.ShiftCode px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">@st.ShiftCode</span>
+                        <span>@st.ShiftName <span class="text-muted">(@startStr–@endStr)</span></span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="d-flex align-items-center gap-2">
+                    <span class="shift-P px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">P</span>
+                    <span>Shift Pagi (07:00–15:00)</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="shift-S px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">S</span>
+                    <span>Shift Sore (15:00–23:00)</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="shift-M px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">M</span>
+                    <span>Shift Malam (23:00–07:00)</span>
+                </div>
+            }
+            <div class="d-flex align-items-center gap-2">
+                <span class="shift-OFF px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">OFF</span>
+                <span>Hari Libur (OFF)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="loading-overlay" id="previewLoadingOverlay">
+    <div class="spinner-border mb-3" style="width: 3.5rem; height: 3.5rem; color: #5eead4;" role="status"></div>
+    <h3 class="fw-bold mb-1" id="loadingTitle" style="color:#ffffff;">Sedang Memproses...</h3>
+    <p class="text-white-50" id="loadingSubtitle" style="max-width: 440px; text-align: center; font-size: 0.85rem;">
+        Mohon tunggu sebentar.
+    </p>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#rerunForm').on('submit', function() {
+                $('#loadingTitle').text('Menjalankan Optimasi Penjadwalan...');
+                $('#loadingSubtitle').text('Algoritma genetika sedang menghitung kembali kombinasi rotasi shift alternatif untuk seluruh karyawan.');
+                $('#previewLoadingOverlay').css('display', 'flex').hide().fadeIn(200);
+            });
+
+            $('form[action*="ConfirmSave"]').on('submit', function() {
+                $('#loadingTitle').text('Menyimpan & Menerbitkan Jadwal...');
+                $('#loadingSubtitle').text('Jadwal shift kerja sedang disimpan ke basis data dan diterbitkan secara resmi ke sistem operasional.');
+                $('#previewLoadingOverlay').css('display', 'flex').hide().fadeIn(200);
+            });
+        });
+    </script>
+}

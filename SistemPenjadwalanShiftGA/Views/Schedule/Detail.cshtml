@@ -1,0 +1,305 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@inject SistemPenjadwalanShiftGA.Interfaces.IShiftTypeRepository ShiftRepo
+@model ScheduleMatrixViewModel
+@{
+    ViewData["Title"] = "Detail Jadwal Kerja";
+    var shiftTypes = (await ShiftRepo.GetAllAsync()).OrderBy(s => s.StartTime).ToList();
+}
+
+@section Breadcrumbs {
+    <li><a href="/Schedule/Index">Penjadwalan</a></li>
+    <li class="breadcrumbs-sep">/</li>
+    <li class="breadcrumbs-active">Detail Jadwal</li>
+}
+
+<!-- Matrix Header & Actions Bar -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge" style="background: #f0fdfa; color: #0f766e; border: 1px solid #ccfbf1; font-family: monospace; font-size: 0.82rem; font-weight: 700; padding: 4px 8px;">
+            @(string.IsNullOrEmpty(Model.Period.ScheduleCode) ? $"SCH-{Model.Period.Id:D4}" : Model.Period.ScheduleCode)
+        </span>
+        <h4 class="fw-bold mb-0 text-slate-900" style="font-size:1.05rem;">@Model.Period.PeriodName</h4>
+        @if(Model.Period.IsPublished)
+        {
+            <span class="status-pill pill-active"><span class="dot-indicator"></span>Resmi Berlaku</span>
+        }
+        else
+        {
+            <span class="status-pill pill-pending"><span class="dot-indicator"></span>Draft Jadwal</span>
+        }
+        <span class="text-muted ms-2" style="font-size:0.8rem;">
+            (@Model.Period.StartDate.ToString("dd MMM yyyy") - @Model.Period.EndDate.ToString("dd MMM yyyy"))
+        </span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="/Schedule/ExportPdf/@Model.Period.Id" target="_blank" class="@(Model.Period.IsPublished ? "btn-primary-admin" : "btn-secondary-admin")" style="font-size:0.8rem;">
+            <i class="fas fa-file-pdf @(Model.Period.IsPublished ? "" : "text-danger") me-1.5"></i> @(Model.Period.IsPublished ? "Ekspor PDF" : "Ekspor PDF Draft")
+        </a>
+
+        @if(!Model.Period.IsPublished)
+        {
+            <button type="button" class="btn-primary-admin" style="font-size:0.8rem;" onclick="publishSchedule('@Model.Period.Id')">
+                <i class="fas fa-paper-plane me-1.5"></i> Publikasikan
+            </button>
+            <button type="button" class="btn-danger-admin" style="font-size:0.8rem;" onclick="deleteSchedule('@Model.Period.Id', false)">
+                <i class="fas fa-trash me-1.5"></i> Hapus Draft
+            </button>
+        }
+        else
+        {
+            <button type="button" class="btn-danger-admin" style="font-size:0.8rem;" onclick="deleteSchedule('@Model.Period.Id', true)">
+                <i class="fas fa-trash me-1.5"></i> Hapus
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Schedule Matrix Card -->
+<div class="admin-card mb-3">
+    <div class="admin-card-header">
+        <div>
+            <h3 class="admin-card-title">Distribusi Penjadwalan Shift Karyawan</h3>
+            <p class="admin-card-desc">Distribusi penugasan giliran kerja harian seluruh karyawan operasional unit kerja. Klik pada sel shift yang bertugas untuk mencatat karyawan berhalangan hadir atau menugaskan karyawan pengganti darurat.</p>
+        </div>
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="matrix-table-container">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px; text-align:center;">NO</th>
+                        <th class="emp-col">NAMA KARYAWAN</th>
+                        @foreach(var date in Model.Dates)
+                        {
+                            <th class="date-col">
+                                @date.ToString("ddd", new System.Globalization.CultureInfo("id-ID"))
+                                <small>@date.ToString("dd/MM")</small>
+                            </th>
+                        }
+                        <th style="min-width:75px; text-align:center;" title="Total Shift Kerja">TOTAL SHIFT</th>
+                        <th style="min-width:75px; text-align:center;" title="Total Hari Libur (OFF)">TOTAL LIBUR</th>
+                        <th style="min-width:75px; text-align:center;" title="Total Shift Malam">SHIFT MALAM</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int detailRowNo = 1; }
+                    @foreach(var emp in Model.Employees)
+                    {
+                        var totalShift = 0;
+                        var totalNight = 0;
+                        var totalOff = 0;
+                        
+                        <tr>
+                            <td style="text-align:center; font-weight:600; color:#64748b; background:#f8fafc;">@(detailRowNo++)</td>
+                            <td class="emp-col">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span>@emp.NamaLengkap</span>
+                                    @if(emp.Level == "Senior")
+                                    {
+                                        <span class="status-pill pill-role ms-2" style="font-size:9px; padding:1px 5px;">Sr</span>
+                                    }
+                                </div>
+                            </td>
+                            @foreach(var date in Model.Dates)
+                            {
+                                var detail = Model.Matrix.FirstOrDefault(m => m.EmployeeId == emp.Id && m.Date.Date == date.Date);
+                                if(detail != null)
+                                {
+                                    var shiftCode = detail.ShiftCode;
+                                    var isOff = shiftCode == "OFF";
+                                    var cellClass = "shift-cell shift-" + shiftCode;
+                                    if(detail.IsSick) cellClass = "shift-cell shift-SICK";
+                                    else if(detail.IsReplaced) cellClass = "shift-cell shift-REPLACED";
+
+                                    if(isOff) totalOff++;
+                                    if(!isOff && !detail.IsSick && !detail.IsReplaced) totalShift++;
+                                    if(detail.ShiftCode == "M" && !detail.IsSick && !detail.IsReplaced) totalNight++;
+
+                                    <td class="@cellClass" 
+                                        @if(Model.Period.IsPublished && !isOff && !detail.IsSick && !detail.IsReplaced)
+                                        {
+                                            @:onclick="showContextMenu('@detail.Id', '@emp.NamaLengkap', '@date.ToString("dd MMM")', '@shiftCode')"
+                                            @:title="Klik untuk opsi darurat"
+                                        }>
+                                        @shiftCode
+                                        @if(detail.IsReplacement)
+                                        {
+                                            <span class="badge-rep">Rep</span>
+                                        }
+                                    </td>
+                                }
+                                else
+                                {
+                                    totalOff++;
+                                    <td class="shift-OFF">OFF</td>
+                                }
+                            }
+                            <td class="fw-bold text-center" style="color:#0f172a; background:#f8fafc;" title="Total Shift Kerja">@totalShift</td>
+                            <td class="fw-bold text-center" style="color:#0f766e; background:#f8fafc;" title="Total Hari Libur (OFF)"><span class="badge bg-light text-dark border px-2 py-0.5">@totalOff</span></td>
+                            <td class="fw-bold text-center" style="color:#7c3aed; background:#f8fafc;" title="Total Shift Malam">@totalNight</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Legend Card -->
+<div class="admin-card">
+    <div class="admin-card-header py-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h4 class="admin-card-title mb-0" style="font-size:0.85rem; font-weight: 700; color: #0f172a;">
+            <i class="fas fa-circle-info text-teal me-1.5"></i> Keterangan Kode Shift &amp; Status Penugasan
+        </h4>
+        <span class="text-muted" style="font-size: 0.72rem;">Acuan simbol jadwal shift operasional</span>
+    </div>
+    <div class="admin-card-body py-2.5">
+        <div class="d-flex flex-wrap align-items-center gap-3" style="font-size:0.8rem;">
+            @if (shiftTypes != null && shiftTypes.Any())
+            {
+                foreach(var st in shiftTypes)
+                {
+                    var startStr = DateTime.Today.Add(st.StartTime).ToString("HH:mm");
+                    var endStr = DateTime.Today.Add(st.EndTime).ToString("HH:mm");
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="shift-@st.ShiftCode px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">@st.ShiftCode</span>
+                        <span>@st.ShiftName <span class="text-muted">(@startStr–@endStr)</span></span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="d-flex align-items-center gap-2">
+                    <span class="shift-P px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">P</span>
+                    <span>Shift Pagi <span class="text-muted">(07:00–15:00)</span></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="shift-S px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">S</span>
+                    <span>Shift Sore <span class="text-muted">(15:00–23:00)</span></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="shift-M px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">M</span>
+                    <span>Shift Malam <span class="text-muted">(23:00–07:00)</span></span>
+                </div>
+            }
+
+            <div class="border-end d-none d-md-block" style="height: 18px; border-color: #cbd5e1 !important;"></div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="shift-OFF px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">OFF</span>
+                <span>Hari Libur (OFF)</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="shift-SICK px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">SICK</span>
+                <span>Izin Sakit</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="shift-REPLACED px-2 py-0.5 rounded" style="font-weight:700; font-size:0.75rem;">REPLACED</span>
+                <span>Telah Digantikan</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger rounded px-1.5 py-0.5" style="font-size:0.65rem; font-weight:700;">Rep</span>
+                <span>Pengganti Darurat</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="antiForgeryForm">@Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        function showContextMenu(detailId, empName, dateStr, shiftCode) {
+            Swal.fire({
+                title: 'Tindakan Darurat Shift',
+                html: `<div class="text-start p-2 rounded" style="background:#f8fafc; font-size:0.85rem;">
+                         <div>Karyawan: <strong>${empName}</strong></div>
+                         <div>Tanggal: <strong>${dateStr}</strong></div>
+                         <div>Shift: <strong>${shiftCode}</strong></div>
+                       </div>
+                       <p class="mt-2 text-muted" style="font-size:0.78rem;">Pilih penanganan jika karyawan bersangkutan berhalangan hadir.</p>`,
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonColor: '#0f766e',
+                denyButtonColor: '#d97706',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-briefcase-medical me-1"></i> Sakit & Cari Pengganti',
+                denyButtonText: 'Tandai Sakit Saja',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/Schedule/Emergency/' + detailId;
+                } else if (result.isDenied) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/MarkSick/' + detailId, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            location.reload();
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function publishSchedule(id) {
+            Swal.fire({
+                title: 'Publikasikan Jadwal?',
+                text: "Jadwal ini akan aktif dan resmi berlaku untuk seluruh karyawan.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0f766e',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Publikasikan'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/Publish/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) location.reload();
+                        else Swal.fire('Gagal!', res.message, 'error');
+                    });
+                }
+            });
+        }
+
+        function deleteSchedule(id, isPublished) {
+            var title = isPublished ? 'Hapus Jadwal Kerja Resmi?' : 'Hapus Draft Jadwal?';
+            var text = isPublished 
+                ? 'Jadwal ini sudah berstatus Published. Menghapus jadwal ini akan menghapus seluruh data shift terkait secara permanen.' 
+                : 'Draft jadwal kerja ini akan dihapus permanen beserta seluruh rincian alokasi shiftnya.';
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus Permanen',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/Delete/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: res.message || 'Jadwal kerja berhasil dihapus.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.href = '/Schedule/Index';
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.message || 'Gagal menghapus jadwal.', 'error');
+                        }
+                    }).fail(function() {
+                        Swal.fire('Gagal!', 'Terjadi kesalahan pada server saat menghapus jadwal.', 'error');
+                    });
+                }
+            });
+        }
+    </script>
+}

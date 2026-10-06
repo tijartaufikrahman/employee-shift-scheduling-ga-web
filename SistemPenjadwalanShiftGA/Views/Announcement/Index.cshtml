@@ -1,0 +1,233 @@
+@using SistemPenjadwalanShiftGA.Models.Entities
+@{
+    ViewData["Title"] = "Pengumuman";
+}
+
+<!-- Announcements Admin Card -->
+<div class="admin-card">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="admin-card-title">Daftar Pengumuman Terbit</h3>
+            <p class="admin-card-desc">Histori pengumuman yang tampil di dashboard karyawan</p>
+        </div>
+        <div>
+            <button type="button" class="btn-primary-admin" onclick="openAnnModal()">
+                <i class="fas fa-plus"></i> Buat Pengumuman
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="admin-table-container p-3">
+            <table id="annTable" class="admin-table table table-hover dt-responsive nowrap w-100">
+                <thead>
+                    <tr>
+                        <th style="width:60px;" class="text-center">NO</th>
+                        <th>JUDUL INFORMASI</th>
+                        <th>TINGKAT PRIORITAS</th>
+                        <th>DITERBITKAN OLEH</th>
+                        <th>TANGGAL RILIS</th>
+                        <th style="text-align:right;">AKSI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form -->
+<div class="modal fade" id="annModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="annForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="annId" name="Id" />
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="annModalLabel">Buat Pengumuman Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Judul Pengumuman</label>
+                        <input type="text" class="form-control" id="title" name="Title" placeholder="Contoh: Jadwal Shift Libur Nasional" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tingkat Prioritas</label>
+                        <select class="form-select" id="priority" name="Priority" required>
+                            <option value="Normal">Normal (Hijau - Informasi Rutin)</option>
+                            <option value="Important">Important (Kuning - Perhatian Khusus)</option>
+                            <option value="Urgent">Urgent (Merah - Darurat / Segera)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Isi Pengumuman</label>
+                        <textarea class="form-control" id="content" name="Content" rows="6" placeholder="Tuliskan detail pengumuman secara lengkap di sini..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-admin" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn-primary-admin">Publikasikan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var annTable;
+        $(document).ready(function () {
+            annTable = $('#annTable').DataTable({
+                ajax: { 
+                    url: '/Announcement/GetAll', 
+                    type: 'GET', 
+                    dataSrc: function (json) {
+                        var arr = json.data || [];
+                        for (var i = 0; i < arr.length; i++) {
+                            arr[i].no = i + 1;
+                        }
+                        return arr;
+                    }
+                },
+                order: [[4, "desc"]],
+                columns: [
+                    {
+                        data: 'no',
+                        orderable: true,
+                        searchable: false,
+                        className: 'text-center',
+                        width: '60px',
+                        render: function(data, type, row) {
+                            return '<span class="fw-bold text-muted" style="font-size: 0.82rem;">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        data: 'title',
+                        render: function(data) {
+                            return '<strong style="color:#0f172a;">' + escHtml(data) + '</strong>';
+                        }
+                    },
+                    { 
+                        data: 'priority',
+                        render: function(data) {
+                            if(data === 'Urgent') return '<span class="status-pill pill-inactive"><i class="fas fa-triangle-exclamation me-1"></i>Urgent</span>';
+                            if(data === 'Important') return '<span class="status-pill pill-pending"><i class="fas fa-circle-exclamation me-1"></i>Important</span>';
+                            return '<span class="status-pill pill-active"><i class="fas fa-circle-info me-1"></i>Normal</span>';
+                        }
+                    },
+                    { 
+                        data: 'createdByName',
+                        render: function(data) {
+                            return '<span style="color:#475569;"><i class="fas fa-user-pen me-1 text-muted"></i>' + escHtml(data || 'Manager') + '</span>';
+                        }
+                    },
+                    { 
+                        data: 'createdAt',
+                        render: function(data, type) {
+                            if (type === 'sort' || type === 'type') return data;
+                            if (!data) return '-';
+                            var date = new Date(data);
+                            return date.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function(data) {
+                            return `<button class="btn-table-action btn-table-edit me-1" onclick="editAnn('${data}')" title="Edit"><i class="fas fa-pen-to-square"></i></button>` +
+                                   `<button class="btn-table-action btn-table-del" onclick="deleteAnn('${data}')" title="Hapus"><i class="fas fa-trash"></i></button>`;
+                        }
+                    }
+                ],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ pengumuman",
+                    infoEmpty: "Tidak ada pengumuman",
+                    zeroRecords: "Pengumuman tidak ditemukan",
+                    paginate: {
+                        first: "«",
+                        previous: "‹",
+                        next: "›",
+                        last: "»"
+                    }
+                }
+            });
+
+            $('#annForm').on('submit', function(e) {
+                e.preventDefault();
+                var id = $('#annId').val();
+                var url = id ? '/Announcement/Edit/' + id : '/Announcement/Create';
+                var data = $(this).serialize();
+
+                $.post(url, data, function(res) {
+                    if(res.success) {
+                        $('#annModal').modal('hide');
+                        annTable.ajax.reload();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                });
+            });
+        });
+
+        function openAnnModal() {
+            $('#annForm')[0].reset();
+            $('#annId').val('');
+            $('#annModalLabel').text('Buat Pengumuman Baru');
+            $('#annModal').modal('show');
+        }
+
+        function editAnn(id) {
+            $.get('/Announcement/Get/' + id, function(res) {
+                if(res.success) {
+                    $('#annId').val(res.data.id);
+                    $('#title').val(res.data.title);
+                    $('#priority').val(res.data.priority);
+                    $('#content').val(res.data.content);
+                    $('#annModalLabel').text('Edit Pengumuman');
+                    $('#annModal').modal('show');
+                }
+            });
+        }
+
+        function deleteAnn(id) {
+            Swal.fire({
+                title: 'Hapus Pengumuman?',
+                text: "Pengumuman ini akan dihapus dari dashboard karyawan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('input[name="__RequestVerificationToken"]').val();
+                    $.post('/Announcement/Delete/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            annTable.ajax.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: 'Pengumuman telah dihapus.',
+                                timer: 1800,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,149 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@model EmergencyReplacementViewModel
+@{
+    ViewData["Title"] = "Pencarian Pengganti Darurat";
+}
+
+<!-- Emergency Context Alert Card -->
+<div class="admin-card mb-4" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); background: #fff5f5;">
+    <div class="admin-card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-wrapper stat-icon-rose" style="width:42px; height:42px; font-size:1.15rem;">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <strong class="d-block" style="color:#991b1b; font-size:0.95rem;">Laporan Ketidakhadiran (Sakit)</strong>
+                <span class="text-muted" style="font-size:0.82rem;">
+                    Karyawan <strong>@Model.SickEmployeeName</strong> tidak dapat bertugas pada tanggal 
+                    <strong style="color:#0f172a;">@Model.TargetDate.ToString("dd MMMM yyyy")</strong> untuk 
+                    <strong style="color:#0f766e;">@Model.TargetShiftName (Shift @Model.TargetShiftCode)</strong>.
+                </span>
+            </div>
+        </div>
+        <div>
+            <a href="/Schedule/Detail/@Model.SchedulePeriodId" class="btn-secondary-admin" style="font-size:0.8rem;">
+                <i class="fas fa-arrow-left me-1"></i> Kembali ke Matrix Jadwal
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Candidate Selection Card -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div>
+            <h3 class="admin-card-title">Kandidat Karyawan Pengganti yang Tersedia</h3>
+            <p class="admin-card-desc">Sistem memfilter karyawan yang berstatus OFF pada hari tersebut dan tidak melanggar jeda istirahat shift</p>
+        </div>
+    </div>
+    <div class="admin-card-body p-0">
+        @if(Model.Candidates != null && Model.Candidates.Any())
+        {
+            var minShift = Model.Candidates.Min(c => c.TotalShiftsInPeriod);
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">NO</th>
+                            <th>NAMA KARYAWAN</th>
+                            <th>SENIORITAS</th>
+                            <th>TOTAL SHIFT PERIODE INI</th>
+                            <th>STATUS REKOMENDASI</th>
+                            <th style="text-align:right;">TINDAKAN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int emgNo = 1; }
+                        @foreach(var candidate in Model.Candidates.OrderBy(c => c.TotalShiftsInPeriod))
+                        {
+                            var isRecommended = candidate.TotalShiftsInPeriod == minShift;
+                            var initial = candidate.NamaLengkap.Length > 0 ? candidate.NamaLengkap.Substring(0, 1).ToUpper() : "U";
+                            <tr style="@(isRecommended ? "background-color: #f0fdfa;" : "")">
+                                <td style="text-align: center; font-weight: 600; color: #64748b;">@(emgNo++)</td>
+                                <td>
+                                    <div class="avatar-cell">
+                                        <div class="avatar-circle">@initial</div>
+                                        <strong style="color:#0f172a;">@candidate.NamaLengkap</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if(candidate.Level == "Senior")
+                                    {
+                                        <span class="status-pill pill-role"><i class="fas fa-award me-1"></i>Senior</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill" style="background:#f1f5f9; color:#475569;"><i class="fas fa-user me-1"></i>Junior</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span style="font-weight:600; color:#334155;">@candidate.TotalShiftsInPeriod Shift</span>
+                                </td>
+                                <td>
+                                    @if(isRecommended)
+                                    {
+                                        <span class="status-pill pill-active"><i class="fas fa-star text-warning me-1"></i>Beban Kerja Terendah (Rekomendasi)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size:0.75rem;">Tersedia</span>
+                                    }
+                                </td>
+                                <td style="text-align:right;">
+                                    <form asp-action="AssignReplacement" method="post" class="d-inline assign-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="ScheduleDetailId" value="@Model.TargetDetailId" />
+                                        <input type="hidden" name="ReplacementEmployeeId" value="@candidate.EmployeeId" />
+                                        <button type="button" class="btn-primary-admin btn-assign" style="font-size:0.75rem; padding:5px 12px;">
+                                            <i class="fas fa-user-check me-1"></i> Tunjuk Pengganti
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <div class="stat-icon-wrapper stat-icon-rose mx-auto mb-3" style="width:50px; height:50px; font-size:1.3rem;">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <h5 class="fw-bold" style="color:#0f172a;">Tidak Ada Kandidat yang Memenuhi Syarat</h5>
+                <p class="text-muted mx-auto" style="max-width:480px; font-size:0.83rem;">
+                    Seluruh karyawan lain sedang bertugas pada hari tersebut atau terbentur batas aturan jeda istirahat shift malam ke pagi.
+                </p>
+                <form asp-action="MarkSickOnly" method="post" class="mt-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ScheduleDetailId" value="@Model.TargetDetailId" />
+                    <button type="submit" class="btn-secondary-admin text-danger border-danger">
+                        <i class="fas fa-circle-xmark me-1"></i> Biarkan Kosong (Tandai Sakit Saja)
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('.btn-assign').on('click', function() {
+            var form = $(this).closest('form');
+            Swal.fire({
+                title: 'Konfirmasi Penunjukan',
+                text: "Karyawan ini akan ditugaskan menggantikan shift yang kosong dan jadwal akan diperbarui otomatis.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0f766e',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Tunjuk Sekarang'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+}

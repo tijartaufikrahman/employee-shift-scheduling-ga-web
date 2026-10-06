@@ -1,0 +1,238 @@
+@using SistemPenjadwalanShiftGA.Models.Entities
+@model IEnumerable<ShiftType>
+@{
+    ViewData["Title"] = "Tipe Shift";
+}
+
+<!-- Shift Types Admin Card -->
+<div class="admin-card">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="admin-card-title">Daftar Slot Shift</h3>
+            <p class="admin-card-desc">Tipe shift aktif yang digunakan dalam proses optimasi jadwal Genetic Algorithm</p>
+        </div>
+        <div>
+            <button type="button" class="btn-primary-admin" onclick="openShiftModal()">
+                <i class="fas fa-plus"></i> Tambah Shift
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="admin-table-container p-3">
+            <table id="shiftTable" class="admin-table table table-hover dt-responsive nowrap w-100">
+                <thead>
+                    <tr>
+                        <th style="width:60px;" class="text-center">NO</th>
+                        <th>NAMA SHIFT</th>
+                        <th>KODE</th>
+                        <th>WAKTU OPERASIONAL</th>
+                        <th>MIN. KARYAWAN</th>
+                        <th style="text-align:right;">AKSI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form -->
+<div class="modal fade" id="shiftModal" tabindex="-1" aria-labelledby="shiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="shiftForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="shiftId" name="Id" />
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shiftModalLabel">Tambah Shift Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Shift</label>
+                        <input type="text" class="form-control" id="shiftName" name="ShiftName" placeholder="Contoh: Shift Pagi" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kode Singkat</label>
+                        <input type="text" class="form-control" id="shiftCode" name="ShiftCode" placeholder="P / S / M" maxlength="5" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Jam Mulai</label>
+                            <input type="time" class="form-control" id="startTime" name="StartTime" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Jam Selesai</label>
+                            <input type="time" class="form-control" id="endTime" name="EndTime" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Min. Karyawan / Shift</label>
+                        <input type="number" class="form-control" id="minStaff" name="MinStaff" min="1" required />
+                        <small class="text-muted" style="font-size:0.75rem;">Ketentuan senioritas dan shift malam diatur dinamis saat proses penjadwalan.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-admin" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn-primary-admin">Simpan Data</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var shiftTable;
+        $(document).ready(function () {
+            shiftTable = $('#shiftTable').DataTable({
+                ajax: {
+                    url: '/ShiftType/GetAll',
+                    type: 'GET',
+                    dataSrc: function (json) {
+                        var arr = json.data || [];
+                        for (var i = 0; i < arr.length; i++) {
+                            arr[i].no = i + 1;
+                        }
+                        return arr;
+                    }
+                },
+                order: [[1, "asc"]],
+                columns: [
+                    {
+                        data: 'no',
+                        orderable: true,
+                        searchable: false,
+                        className: 'text-center',
+                        width: '60px',
+                        render: function(data, type, row) {
+                            return '<span class="fw-bold text-muted" style="font-size: 0.82rem;">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        data: 'shiftName',
+                        render: function(data) {
+                            return '<strong style="color:#0f172a;">' + escHtml(data) + '</strong>';
+                        }
+                    },
+                    { 
+                        data: 'shiftCode', 
+                        render: function(data) { 
+                            return '<span class="code-tag">' + escHtml(data) + '</span>'; 
+                        } 
+                    },
+                    { 
+                        data: 'startTime', 
+                        render: function(data, type, row) { 
+                            return '<span style="font-family:monospace; font-weight:600; color:#334155;"><i class="fas fa-clock me-1 text-muted"></i>' + (row.startTime || '') + ' - ' + (row.endTime || '') + '</span>'; 
+                        } 
+                    },
+                    { 
+                        data: 'minStaff',
+                        render: function(data) {
+                            return '<span style="font-weight:600;">' + data + ' Orang</span>';
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function(data) {
+                            return `<button class="btn-table-action btn-table-edit me-1" onclick="editShift(${data})" title="Edit"><i class="fas fa-pen-to-square"></i></button>` +
+                                   `<button class="btn-table-action btn-table-del" onclick="deleteShift(${data})" title="Hapus"><i class="fas fa-trash"></i></button>`;
+                        }
+                    }
+                ],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ shift",
+                    infoEmpty: "Tidak ada data shift",
+                    zeroRecords: "Shift tidak ditemukan",
+                    paginate: {
+                        first: "«",
+                        previous: "‹",
+                        next: "›",
+                        last: "»"
+                    }
+                }
+            });
+
+            $('#shiftForm').on('submit', function(e) {
+                e.preventDefault();
+                var id = $('#shiftId').val();
+                var url = id ? '/ShiftType/Edit/' + id : '/ShiftType/Create';
+                var data = $(this).serialize();
+
+                $.post(url, data, function(res) {
+                    if(res.success) {
+                        $('#shiftModal').modal('hide');
+                        shiftTable.ajax.reload();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                });
+            });
+        });
+
+        function openShiftModal() {
+            $('#shiftForm')[0].reset();
+            $('#shiftId').val('');
+            $('#shiftModalLabel').text('Tambah Shift Baru');
+            $('#shiftModal').modal('show');
+        }
+
+        function editShift(id) {
+            $.get('/ShiftType/Get/' + id, function(res) {
+                if(res.success) {
+                    $('#shiftId').val(res.data.id);
+                    $('#shiftName').val(res.data.shiftName);
+                    $('#shiftCode').val(res.data.shiftCode);
+                    $('#startTime').val(res.data.startTime);
+                    $('#endTime').val(res.data.endTime);
+                    $('#minStaff').val(res.data.minStaff);
+                    $('#shiftModalLabel').text('Edit Shift: ' + res.data.shiftName);
+                    $('#shiftModal').modal('show');
+                }
+            });
+        }
+
+        function deleteShift(id) {
+            Swal.fire({
+                title: 'Hapus Tipe Shift?',
+                text: "Shift ini akan dihapus dari sistem.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('input[name="__RequestVerificationToken"]').val();
+                    $.post('/ShiftType/Delete/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            shiftTable.ajax.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: 'Data shift berhasil dihapus.',
+                                timer: 1800,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

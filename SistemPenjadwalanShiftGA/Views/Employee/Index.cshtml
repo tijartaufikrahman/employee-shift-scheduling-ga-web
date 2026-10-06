@@ -1,0 +1,285 @@
+@using SistemPenjadwalanShiftGA.Models.Entities
+@{
+    ViewData["Title"] = "Karyawan";
+}
+
+<!-- Employee Admin Card -->
+<div class="admin-card">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="admin-card-title">Direktori Karyawan Aktif</h3>
+            <p class="admin-card-desc">Daftar karyawan yang tersedia untuk dijadwalkan shift kerja oleh sistem</p>
+        </div>
+        <div>
+            <button type="button" class="btn-primary-admin" onclick="openEmpModal()">
+                <i class="fas fa-plus"></i> Tambah Karyawan
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="admin-table-container p-3">
+            <table id="empTable" class="admin-table table table-hover dt-responsive nowrap w-100">
+                <thead>
+                    <tr>
+                        <th style="width:60px;" class="text-center">NO</th>
+                        <th>NAMA LENGKAP</th>
+                        <th>EMAIL</th>
+                        <th>NO. TELEPON</th>
+                        <th>SENIORITAS</th>
+                        <th>STATUS</th>
+                        <th style="text-align:right;">AKSI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form -->
+<div class="modal fade" id="empModal" tabindex="-1" aria-labelledby="empModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="empForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="empId" name="Id" />
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="empModalLabel">Tambah Karyawan Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" class="form-control" id="namaLengkap" name="NamaLengkap" placeholder="Nama lengkap karyawan" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat Email</label>
+                        <input type="email" class="form-control" id="email" name="Email" placeholder="email@perusahaan.com" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nomor Handphone / WhatsApp</label>
+                        <input type="text" class="form-control" id="phoneNumber" name="PhoneNumber" placeholder="08xxxxxxxxxx" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tingkat Senioritas</label>
+                        <select class="form-select" id="level" name="Level" required>
+                            <option value="">-- Pilih Level --</option>
+                            <option value="Senior">Senior</option>
+                            <option value="Junior">Junior</option>
+                        </select>
+                        <small class="text-muted" style="font-size:0.72rem;">Digunakan engine penjadwalan untuk memastikan keberadaan karyawan Senior di setiap shift.</small>
+                    </div>
+                    <div class="p-3 rounded-2 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                        <div class="mb-2">
+                            <label class="form-label">Password <small class="text-muted" id="pwdHelp">(Kosongkan jika tidak ingin diubah)</small></label>
+                            <input type="password" class="form-control" id="password" name="Password" placeholder="Minimal 6 karakter" />
+                        </div>
+                        <div>
+                            <label class="form-label">Konfirmasi Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="ConfirmPassword" placeholder="Ulangi password" />
+                        </div>
+                    </div>
+                    <div class="form-check form-switch" id="statusGroup" style="display:none;">
+                        <input type="checkbox" class="form-check-input" id="isActive" name="IsActive" value="true">
+                        <label class="form-check-label ms-1" for="isActive" style="font-size:0.82rem; font-weight:600;">Status Akun Aktif</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary-admin" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn-primary-admin">Simpan Data</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var empTable;
+        $(document).ready(function () {
+            empTable = $('#empTable').DataTable({
+                ajax: { 
+                    url: '/Employee/GetAll', 
+                    type: 'GET', 
+                    dataSrc: function (json) {
+                        var arr = json.data || [];
+                        for (var i = 0; i < arr.length; i++) {
+                            arr[i].no = i + 1;
+                        }
+                        return arr;
+                    }
+                },
+                order: [[1, "asc"]],
+                columns: [
+                    {
+                        data: 'no',
+                        orderable: true,
+                        searchable: false,
+                        className: 'text-center',
+                        width: '60px',
+                        render: function(data, type, row) {
+                            return '<span class="fw-bold text-muted" style="font-size: 0.82rem;">' + data + '</span>';
+                        }
+                    },
+                    { 
+                        data: 'namaLengkap',
+                        render: function(data) {
+                            var initial = data ? data.trim().charAt(0).toUpperCase() : 'U';
+                            return `
+                                <div class="avatar-cell">
+                                    <div class="avatar-circle">${initial}</div>
+                                    <div>
+                                        <strong style="color:#0f172a;">${escHtml(data)}</strong>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    },
+                    { 
+                        data: 'email',
+                        render: function(data) {
+                            return '<span style="color:#475569;">' + escHtml(data) + '</span>';
+                        }
+                    },
+                    { 
+                        data: 'phoneNumber',
+                        render: function(data) {
+                            return data ? '<i class="fab fa-whatsapp text-success me-1"></i>' + escHtml(data) : '<span class="text-muted">-</span>';
+                        }
+                    },
+                    { 
+                        data: 'level',
+                        render: function(data) {
+                            return data === 'Senior' 
+                                ? '<span class="status-pill pill-role"><i class="fas fa-award me-1"></i>Senior</span>' 
+                                : '<span class="status-pill" style="background:#f1f5f9; color:#475569;"><i class="fas fa-user me-1"></i>Junior</span>';
+                        }
+                    },
+                    { 
+                        data: 'isActive',
+                        render: function(data) {
+                            return data 
+                                ? '<span class="status-pill pill-active"><span class="dot-indicator"></span>Aktif</span>' 
+                                : '<span class="status-pill pill-inactive"><span class="dot-indicator"></span>Nonaktif</span>';
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-end',
+                        render: function(data) {
+                            return `<button class="btn-table-action btn-table-edit me-1" onclick="editEmp('${data}')" title="Edit"><i class="fas fa-pen-to-square"></i></button>` +
+                                   `<button class="btn-table-action btn-table-del" onclick="deleteEmp('${data}')" title="Hapus"><i class="fas fa-trash"></i></button>`;
+                        }
+                    }
+                ],
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ karyawan",
+                    infoEmpty: "Tidak ada data karyawan",
+                    zeroRecords: "Karyawan tidak ditemukan",
+                    paginate: {
+                        first: "«",
+                        previous: "‹",
+                        next: "›",
+                        last: "»"
+                    }
+                }
+            });
+
+            $('#empForm').on('submit', function(e) {
+                e.preventDefault();
+                var id = $('#empId').val();
+                var pwd = $('#password').val();
+                var cpwd = $('#confirmPassword').val();
+                if(pwd !== cpwd) {
+                    Swal.fire('Error', 'Password dan Konfirmasi Password tidak cocok!', 'error');
+                    return;
+                }
+                
+                var url = id ? '/Employee/Edit/' + id : '/Employee/Create';
+                var data = $(this).serialize();
+
+                $.post(url, data, function(res) {
+                    if(res.success) {
+                        $('#empModal').modal('hide');
+                        empTable.ajax.reload();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                });
+            });
+        });
+
+        function openEmpModal() {
+            $('#empForm')[0].reset();
+            $('#empId').val('');
+            $('#empModalLabel').text('Tambah Karyawan Baru');
+            $('#password').attr('required', true);
+            $('#pwdHelp').hide();
+            $('#statusGroup').hide();
+            $('#isActive').prop('checked', true);
+            $('#empModal').modal('show');
+        }
+
+        function editEmp(id) {
+            $.get('/Employee/Get/' + id, function(res) {
+                if(res.success) {
+                    $('#empId').val(res.data.id);
+                    $('#namaLengkap').val(res.data.namaLengkap);
+                    $('#email').val(res.data.email);
+                    $('#phoneNumber').val(res.data.phoneNumber);
+                    $('#level').val(res.data.level);
+                    $('#isActive').prop('checked', res.data.isActive);
+                    
+                    $('#password').removeAttr('required').val('');
+                    $('#confirmPassword').val('');
+                    $('#pwdHelp').show();
+                    $('#statusGroup').show();
+                    
+                    $('#empModalLabel').text('Edit Karyawan: ' + res.data.namaLengkap);
+                    $('#empModal').modal('show');
+                }
+            });
+        }
+
+        function deleteEmp(id) {
+            Swal.fire({
+                title: 'Hapus Karyawan?',
+                text: "Data karyawan akan dinonaktifkan / dihapus dari sistem!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('input[name="__RequestVerificationToken"]').val();
+                    $.post('/Employee/Delete/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            empTable.ajax.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: 'Data karyawan berhasil dihapus.',
+                                timer: 1800,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

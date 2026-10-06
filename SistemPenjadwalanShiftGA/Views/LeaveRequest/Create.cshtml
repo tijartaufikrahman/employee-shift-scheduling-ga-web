@@ -1,0 +1,238 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@model LeaveRequestCreateViewModel
+@{
+    ViewData["Title"] = "Ajukan Permohonan Izin / Cuti";
+}
+
+<style>
+    .type-card { 
+        border: 2px solid var(--border-color); 
+        border-radius: 10px; 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+        padding: 1.15rem; 
+        text-align: center; 
+        background: #ffffff;
+        display: block;
+    }
+    .type-card:hover { 
+        border-color: var(--color-primary); 
+        background-color: var(--color-primary-light); 
+        transform: translateY(-2px);
+    }
+    .type-card.selected { 
+        border-color: var(--color-primary); 
+        background-color: var(--color-primary-light); 
+        box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2);
+    }
+    .type-card input { display: none; }
+    .drop-zone { 
+        border: 2px dashed #cbd5e1; 
+        border-radius: 10px; 
+        padding: 30px; 
+        text-align: center; 
+        cursor: pointer; 
+        background: #f8fafc; 
+        transition: all 0.2s ease; 
+    }
+    .drop-zone:hover, .drop-zone.dragover { 
+        border-color: var(--color-primary); 
+        background: #f0fdfa; 
+    }
+    .file-preview-item { 
+        border: 1px solid var(--border-color); 
+        border-radius: 8px; 
+        padding: 10px 14px; 
+        margin-top: 8px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="admin-card-title">Formulir Pengajuan Izin</h3>
+                    <p class="admin-card-desc">Pastikan tanggal dan alasan yang Anda isi sudah benar sebelum mengirimkan</p>
+                </div>
+                <a href="/LeaveRequest/Index" class="btn-secondary-admin" style="font-size:0.8rem;">
+                    <i class="fas fa-arrow-left me-1"></i> Kembali ke Riwayat
+                </a>
+            </div>
+            <div class="admin-card-body p-4">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3 py-2 px-3" style="font-size:0.83rem;"></div>
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger mb-3 py-2 px-3" style="font-size:0.83rem;">
+                        <i class="fas fa-triangle-exclamation me-1.5"></i> @TempData["ErrorMessage"]
+                    </div>
+                }
+
+                <form asp-action="Create" method="post" enctype="multipart/form-data" id="leaveForm">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="mb-4">
+                        <label class="form-label" style="font-size:0.85rem; font-weight:700; color:#0f172a;">
+                            Tipe Permohonan Izin
+                        </label>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="type-card selected" id="cardCuti">
+                                    <input type="radio" asp-for="LeaveType" value="Cuti" checked onchange="updateTypeSelection()" />
+                                    <i class="fas fa-umbrella-beach fa-2x mb-2 text-teal"></i>
+                                    <h5 class="fw-bold mb-1" style="font-size:0.95rem; color:#0f172a;">Cuti</h5>
+                                    <small class="text-muted" style="font-size:0.72rem;">Cuti Tahunan / Bersama</small>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="type-card" id="cardSakit">
+                                    <input type="radio" asp-for="LeaveType" value="Sakit" onchange="updateTypeSelection()" />
+                                    <i class="fas fa-briefcase-medical fa-2x mb-2 text-danger"></i>
+                                    <h5 class="fw-bold mb-1" style="font-size:0.95rem; color:#0f172a;">Sakit</h5>
+                                    <small class="text-muted" style="font-size:0.72rem;">Lampirkan Surat Dokter</small>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="type-card" id="cardIzin">
+                                    <input type="radio" asp-for="LeaveType" value="Izin" onchange="updateTypeSelection()" />
+                                    <i class="fas fa-user-clock fa-2x mb-2 text-primary"></i>
+                                    <h5 class="fw-bold mb-1" style="font-size:0.95rem; color:#0f172a;">Izin</h5>
+                                    <small class="text-muted" style="font-size:0.72rem;">Keperluan Pribadi / Keluarga</small>
+                                </label>
+                            </div>
+                        </div>
+                        <span asp-validation-for="LeaveType" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" style="font-size:0.85rem; font-weight:700; color:#0f172a;">
+                            <i class="fas fa-calendar-day me-1 text-teal"></i> Tanggal Berhalangan Hadir
+                        </label>
+                        <input type="date" asp-for="RequestDate" asp-format="{0:yyyy-MM-dd}" class="form-control form-control-lg" style="font-size:0.9rem;" required />
+                        <span asp-validation-for="RequestDate" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" style="font-size:0.85rem; font-weight:700; color:#0f172a;">
+                            Alasan Pengajuan Secara Terperinci
+                        </label>
+                        <textarea asp-for="Reason" class="form-control" rows="4" required placeholder="Jelaskan alasan izin atau keterangan sakit Anda di sini..."></textarea>
+                        <span asp-validation-for="Reason" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" style="font-size:0.85rem; font-weight:700; color:#0f172a;">
+                            <i class="fas fa-paperclip me-1 text-teal"></i> Lampiran Surat Dokter / Dokumen Pendukung
+                        </label>
+                        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-cloud-arrow-up fa-2x text-muted mb-2"></i>
+                            <h6 class="fw-bold mb-1" style="color:#0f172a;">Klik atau Tarik Berkas ke Sini</h6>
+                            <p class="text-muted small mb-0">Format didukung: JPG, PNG, PDF (Maksimal 5 MB per berkas)</p>
+                            <input type="file" id="fileInput" name="Attachments" multiple style="display:none;" accept=".jpg,.jpeg,.png,.pdf" onchange="handleFiles(this.files)" />
+                        </div>
+                        <div id="filePreviewContainer" class="mt-2"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-5">
+                        <a href="/LeaveRequest/Index" class="btn-secondary-admin">
+                            <i class="fas fa-xmark"></i> Batal
+                        </a>
+                        <button type="submit" class="btn-primary-admin px-4 py-2">
+                            <i class="fas fa-paper-plane me-1"></i> Kirimkan Pengajuan Izin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <text>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Mengirimkan',
+                    text: '@Html.Raw(TempData["ErrorMessage"])'
+                });
+                </text>
+            }
+        });
+        var selectedFiles = [];
+
+        function updateTypeSelection() {
+            $('.type-card').removeClass('selected');
+            var val = $('input[name="LeaveType"]:checked').val();
+            $('#card' + val).addClass('selected');
+        }
+
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                selectedFiles.push(files[i]);
+            }
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            $('#filePreviewContainer').empty();
+            selectedFiles.forEach((file, index) => {
+                var size = (file.size / 1024 / 1024).toFixed(2);
+                var html = `
+                    <div class="file-preview-item">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-file-lines text-teal"></i>
+                            <span class="fw-bold" style="font-size:0.82rem; color:#0f172a;">${escHtml(file.name)}</span>
+                            <small class="text-muted">(${size} MB)</small>
+                        </div>
+                        <button type="button" class="btn-table-action btn-table-del" onclick="removeFile(${index})" title="Hapus Berkas">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                $('#filePreviewContainer').append(html);
+            });
+            updateFileInput();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderPreviews();
+        }
+
+        function updateFileInput() {
+            var dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => {
+                dataTransfer.items.add(file);
+            });
+            document.getElementById('fileInput').files = dataTransfer.files;
+        }
+
+        var dropZone = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, function(e) { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, function() { dropZone.classList.add('dragover'); }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, function() { dropZone.classList.remove('dragover'); }, false);
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            var dt = e.dataTransfer;
+            var files = dt.files;
+            handleFiles(files);
+        }, false);
+    </script>
+}

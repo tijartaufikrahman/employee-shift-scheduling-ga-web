@@ -1,0 +1,143 @@
+// =======================================================================
+// SKEMA DATABASE SISTEM PENJADWALAN SHIFT KERJA
+// Fitur Lengkap: Audit Trail, Multi-Attachment Cuti, & Dokumen PDF Ber-QR
+// =======================================================================
+
+// -----------------------------------------------------------------------
+// 1. OTORISASI & PENGGUNA
+// -----------------------------------------------------------------------
+Table roles {
+  id int [pk, increment]
+  role_name varchar(50) [not null, unique, note: "Manager, Employee"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}
+
+Table users {
+  id int [pk, increment]
+  role_id int [not null, ref: > roles.id]
+  full_name varchar(100) [not null]
+  email varchar(100) [not null, unique]
+  password_hash varchar(255) [not null]
+  phone_number varchar(20)
+  level varchar(20) [not null, note: "Senior, Junior"]
+  is_active boolean [default: true]
+  reset_password_token varchar(255) [null, note: "Token acak untuk reset lupa password"]
+  token_created_at datetime [null, note: "Waktu token dibuat"]
+  token_expired_at datetime [null, note: "Batas waktu kedaluwarsa token"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}
+
+// -----------------------------------------------------------------------
+// 2. FITUR PENGUMUMAN (INFORMASI KE BANYAK ORANG)
+// -----------------------------------------------------------------------
+Table announcements {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id, note: "Pembuat pengumuman (Manager)"]
+  title varchar(150) [not null]
+  content text [not null]
+  priority varchar(20) [default: 'Normal', note: "Normal, Important, Urgent"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}
+
+// -----------------------------------------------------------------------
+// 3. MASTER DATA SHIFT KERJA
+// -----------------------------------------------------------------------
+Table shift_types {
+  id int [pk, increment]
+  shift_name varchar(50) [not null, note: "Pagi, Sore, Malam"]
+  shift_code varchar(10) [not null, unique, note: "P, S, M"]
+  start_time time [not null]
+  end_time time [not null]
+  min_staff int [not null, default: 2, note: "Kuota minimal staf per shift"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}
+
+// -----------------------------------------------------------------------
+// 4. PENGAJUAN CUTI / IZIN / SAKIT (HEADER & MULTI-LAMPIRAN)
+// -----------------------------------------------------------------------
+Table leave_requests {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  leave_type varchar(20) [not null, note: "Cuti, Sakit, Izin"]
+  request_date date [not null, note: "Tanggal yang dimohonkan"]
+  reason text [not null]
+  status varchar(20) [default: 'Pending', note: "Pending, Approved, Rejected"]
+  rejection_note text [null, note: "Catatan jika pengajuan ditolak Manager"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}
+
+Table leave_request_attachments {
+  id int [pk, increment]
+  leave_request_id int [not null, ref: > leave_requests.id, note: "Relasi ke pengajuan cuti"]
+  file_name varchar(255) [not null, note: "Nama asli file (surat_dokter.pdf, foto_resep.jpg)"]
+  file_path varchar(500) [not null, note: "Lokasi penyimpanan file di server"]
+  file_type varchar(50) [not null, note: "Format MIME type file"]
+  file_size int [not null, note: "Ukuran file dalam bytes"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pengunggah"]
+  updated_at datetime [null]
+  updated_by int [null]
+}
+
+// -----------------------------------------------------------------------
+// 5. MASTER PERIODE JADWAL & DOKUMEN RESMI (PDF BER-QR)
+// -----------------------------------------------------------------------
+Table schedule_periods {
+  id int [pk, increment]
+  schedule_code varchar(50) [not null, unique, note: "Kode unik jadwal resmi operasional, contoh: SCH-202609-001"]
+  period_name varchar(100) [not null, note: "Contoh: Periode Minggu ke-1 Oktober"]
+  start_date date [not null]
+  end_date date [not null]
+  duration_type varchar(20) [not null, note: "1_Week / 2_Weeks"]
+  is_published boolean [default: false, note: "True jika sudah di-publish ke staf"]
+  
+  // Kebijakan Operasional Saat Penjadwalan (Dikonfigurasi Dinamis oleh Manager)
+  max_consecutive_days int [default: 5, note: "Batas maksimal hari kerja beruntun"]
+  max_off_days int [default: 2, note: "Batas maksimal hari libur per staf"]
+  prevent_night_to_morning boolean [default: true, note: "Larangan shift malam langsung ke pagi (jeda 24 jam)"]
+  min_senior int [default: 1, note: "Ketentuan minimal senior per shift"]
+  night_shift_id int [null, ref: > shift_types.id, note: "Shift yang ditentukan sebagai shift malam"]
+
+  // Fitur Dokumen PDF Resmi & QR Code Verifikasi
+  pdf_file_path varchar(500) [null, note: "Path file PDF jadwal resmi yang di-generate"]
+  qr_code_path varchar(500) [null, note: "Path file gambar QR code yang disematkan di PDF"]
+  qr_verification_code varchar(100) [null, unique, note: "Kode token unik untuk validasi keaslian jadwal"]
+  generated_at datetime [null, note: "Waktu dokumen PDF jadwal di-generate"]
+  
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}
+
+// -----------------------------------------------------------------------
+// 6. DETAIL JADWAL KERJA (TABEL TRANSAKSI UTAMA)
+// -----------------------------------------------------------------------
+Table schedule_details {
+  id int [pk, increment]
+  schedule_period_id int [not null, ref: > schedule_periods.id]
+  user_id int [not null, ref: > users.id]
+  shift_type_id int [ref: > shift_types.id, note: "Null jika berstatus Libur/OFF"]
+  work_date date [not null]
+  status varchar(20) [default: 'Assigned', note: "Assigned, Off, Sick, Replaced"]
+  is_replacement boolean [default: false, note: "True jika menggantikan staf sakit"]
+  created_at datetime [default: `now()`]
+  created_by int [null, note: "ID User pembuat"]
+  updated_at datetime [null]
+  updated_by int [null, note: "ID User pengubah"]
+}

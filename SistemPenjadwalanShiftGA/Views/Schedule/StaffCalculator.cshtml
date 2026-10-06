@@ -1,0 +1,457 @@
+@using SistemPenjadwalanShiftGA.Models.Entities
+@model IEnumerable<ShiftType>
+@{
+    ViewData["Title"] = "Kalkulator Kebutuhan Karyawan";
+    var dbShifts = Model != null ? Model.ToList() : new List<ShiftType>();
+}
+
+@section Breadcrumbs {
+    <li><a href="/Schedule/Index">Penjadwalan</a></li>
+    <li class="breadcrumbs-sep">/</li>
+    <li class="breadcrumbs-active">Kalkulator Kebutuhan Karyawan</li>
+}
+
+<style>
+    /* Styling form konsisten dengan standar https://localhost:9008/Schedule/Generate */
+    .param-group-box {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem 1.25rem 1.35rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .param-group-box:focus-within {
+        border-color: #99f6e4;
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.06);
+    }
+    .stepper-btn {
+        width: 32px;
+        height: 31px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .stepper-btn:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+    .stepper-btn:active {
+        transform: scale(0.95);
+    }
+    .form-range::-webkit-slider-thumb {
+        background: #0d9488;
+    }
+    .form-range::-moz-range-thumb {
+        background: #0d9488;
+    }
+</style>
+
+<!-- Layout 2 Kolom Eksekutif:
+     Kiri: Card Pengaturan Shift & Libur (Card 1 Daftar Shift & Card 2 Jatah Libur)
+     Kanan: Beda Card Ringkasan Informasi & Analisis Kebutuhan Karyawan
+-->
+<div class="row g-4">
+    <!-- Kolom Kiri: Pengaturan Slot Shift & Jatah Libur -->
+    <div class="col-lg-7">
+        <div class="admin-card mb-4" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div class="admin-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                <div>
+                    <h3 class="admin-card-title mb-0" style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+                        <i class="fas fa-sliders text-teal me-2"></i> Pengaturan Shift &amp; Hari Libur
+                    </h3>
+                    <p class="admin-card-desc mb-0 mt-0.5" style="font-size: 0.78rem; color: #64748b;">
+                        Konfigurasi alokasi karyawan per shift dan parameter hak libur mingguan unit kerja
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn-secondary-admin py-1.5 px-3" onclick="resetToDatabaseShifts()" style="font-size: 0.8rem; font-weight: 600;" title="Muat ulang konfigurasi shift dari database">
+                        <i class="fas fa-rotate-left me-1.5 text-muted"></i> Reset ke Shift Database
+                    </button>
+                </div>
+            </div>
+            <div class="admin-card-body p-4">
+                <!-- CARD 1: Daftar Slot Shift Kerja -->
+                <div class="param-group-box mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="width: 24px; height: 24px; background: #0f766e; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;">1</span>
+                            <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.92rem;">Daftar Slot Shift Kerja</h5>
+                        </div>
+                        <button type="button" class="btn-primary-admin" onclick="addCustomShift()" style="font-size: 0.75rem; padding: 4px 11px;">
+                            <i class="fas fa-plus me-1"></i> Tambah Shift
+                        </button>
+                    </div>
+
+                    <p class="text-muted mb-3" style="font-size: 0.75rem; line-height: 1.4;">
+                        Tentukan alokasi karyawan yang wajib bertugas pada masing-masing shift operasional setiap harinya.
+                    </p>
+
+                    <div class="admin-table-container border rounded-3 mb-3">
+                        <table class="admin-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45px; text-align: center;">NO</th>
+                                    <th style="width: 70px; text-align: center;">KODE</th>
+                                    <th>NAMA SHIFT</th>
+                                    <th style="width: 165px; text-align: center;">KEBUTUHAN KARYAWAN / HARI</th>
+                                    <th style="width: 45px; text-align: right;">AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shiftTableBody">
+                                <!-- Di-render secara dinamis oleh JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-2.5 px-3 rounded-3 d-flex justify-content-between align-items-center" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                        <div>
+                            <span class="text-slate-800 fw-bold d-block" style="font-size: 0.8rem;">TOTAL KARYAWAN BERTUGAS PER HARI:</span>
+                            <small class="text-muted" style="font-size: 0.71rem;">Kebutuhan minimal karyawan di unit kerja setiap 24 jam</small>
+                        </div>
+                        <strong class="text-teal" id="tableTotalDailyStaff" style="font-size: 1.05rem;">5 Orang</strong>
+                    </div>
+                </div>
+
+                <!-- CARD 2: Jatah Libur Mingguan Karyawan -->
+                <div class="param-group-box">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <span style="width: 24px; height: 24px; background: #0f766e; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;">2</span>
+                        <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.92rem;">Jatah Libur Mingguan Karyawan</h5>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0 text-slate-800" style="font-size: 0.82rem;">
+                            Alokasi Hari Libur per Minggu
+                        </label>
+                        <span class="status-pill pill-role" id="displayWeeklyOffBadge" style="font-size: 0.74rem; font-weight: 700;">
+                            1 Hari / Minggu
+                        </span>
+                    </div>
+                    <small class="text-muted d-block mb-2" style="font-size: 0.72rem; line-height: 1.35;">
+                        Hak istirahat operasional yang diterima setiap karyawan dalam satu siklus kerja 7 hari.
+                    </small>
+
+                    <div class="d-flex align-items-center gap-2 my-2">
+                        <input type="range" id="sliderWeeklyOff" class="form-range flex-grow-1" min="1" max="4" step="1" value="1" oninput="onWeeklyOffSlider(this.value)" />
+                        <div class="input-group input-group-sm flex-shrink-0" style="width: 110px;">
+                            <input type="number" id="numWeeklyOff" class="form-control text-center fw-bold" min="1" max="4" value="1" oninput="onWeeklyOffNum(this.value)" style="border-color: #cbd5e1; font-size: 0.82rem;" />
+                            <span class="input-group-text bg-light text-muted px-2" style="font-size: 0.72rem;">Hari / Mg</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between text-muted" style="font-size: 0.7rem;">
+                        <span>1 Hari (Pola 6-1)</span>
+                        <span class="text-teal fw-semibold">2 Hari (Pola 5-2)</span>
+                        <span>Maks 4 Hari</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom Kanan: Beda Card Informasi Analisis Kebutuhan Karyawan -->
+    <div class="col-lg-5">
+        <div class="admin-card mb-4" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div class="admin-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+                <div>
+                    <h3 class="admin-card-title mb-0" style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+                        <i class="fas fa-chart-pie text-teal me-2"></i> Analisis Kebutuhan Karyawan
+                    </h3>
+                    <p class="admin-card-desc mb-0 mt-0.5" style="font-size: 0.78rem; color: #64748b;">
+                        Informasi ringkasan manajerial untuk perencanaan alokasi sumber daya manusia
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="/Schedule/Index" class="btn-secondary-admin py-1.5 px-3" style="font-size: 0.8rem; font-weight: 600;">
+                        <i class="fas fa-arrow-left me-1.5 text-muted"></i> Kembali ke Jadwal
+                    </a>
+                </div>
+            </div>
+            <div class="admin-card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Box Hasil Angka Utama (Hero Metric) -->
+                    <div class="p-4 rounded-3 text-center mb-3" style="background: #f0fdfa; border: 1.5px solid #99f6e4;">
+                        <span class="text-muted fw-bold d-block mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Total Kebutuhan Karyawan:
+                        </span>
+                        <div class="d-flex align-items-baseline justify-content-center gap-2 my-2">
+                            <span class="text-teal fw-bolder" id="mainResultCount" style="font-size: 4.2rem; line-height: 1; letter-spacing: -2px;">
+                                6
+                            </span>
+                            <span class="fw-bold text-slate-800" style="font-size: 1.45rem;">Orang</span>
+                        </div>
+                        <div class="mt-2 mb-2">
+                            <span class="status-pill pill-active" id="statusFeasibilityPill" style="font-size: 0.75rem; font-weight: 600; padding: 3px 10px;">
+                                <span class="dot-indicator"></span>Kapasitas Operasional Terpenuhi
+                            </span>
+                        </div>
+                        <p class="text-muted mb-0" id="executiveSummaryText" style="font-size: 0.76rem; line-height: 1.45;">
+                            Unit kerja memerlukan minimal 6 orang karyawan untuk menjamin seluruh slot shift harian selalu terisi dengan jatah 1 hari libur mingguan per karyawan.
+                        </p>
+                    </div>
+
+                    <!-- Informasi Distribusi Tenaga Kerja -->
+                    <div class="p-3 rounded-3 mt-3" style="background: #ffffff; border: 1px solid #e2e8f0; font-size: 0.78rem;">
+                        <h6 class="fw-bold text-slate-900 mb-2.5 pb-2 border-bottom d-flex align-items-center justify-content-between" style="font-size: 0.82rem;">
+                            <span><i class="fas fa-users-gear text-teal me-1.5"></i> Ringkasan Distribusi Kerja</span>
+                            <span class="badge bg-light text-secondary border" style="font-size: 0.68rem; font-weight: 600;">Siklus Mingguan</span>
+                        </h6>
+                        
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <span class="text-slate-800 fw-semibold d-block">Karyawan Bertugas Aktif</span>
+                                <small class="text-muted" style="font-size: 0.71rem;">Jumlah karyawan yang bertugas setiap hari</small>
+                            </div>
+                            <span class="status-pill pill-role" id="infoDailyDuty" style="font-weight: 700; font-size: 0.8rem;">5 Orang / Hari</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <div>
+                                <span class="text-slate-800 fw-semibold d-block">Karyawan Libur Bergilir</span>
+                                <small class="text-muted" style="font-size: 0.71rem;">Rata-rata karyawan yang sedang libur (OFF) per hari</small>
+                            </div>
+                            <span class="status-pill pill-role" id="infoDailyOff" style="font-weight: 700; font-size: 0.8rem;">1 Orang / Hari</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="text-slate-800 fw-semibold d-block">Total Beban Giliran Kerja</span>
+                                <small class="text-muted" style="font-size: 0.71rem;">Akumulasi seluruh giliran kerja dalam 7 hari</small>
+                            </div>
+                            <span class="text-slate-900 fw-bold" id="infoTotalWeeklyShifts" style="font-size: 0.82rem;">35 Slot Shift</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rekomendasi Manajerial Perencanaan Karyawan -->
+                <div class="p-3 rounded-3 mt-4" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.74rem; color: #334155;">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fas fa-lightbulb text-teal mt-0.5" style="font-size: 0.85rem;"></i>
+                        <div>
+                            <strong class="text-slate-900 d-block mb-0.5">Catatan Perencanaan Manajer:</strong>
+                            <span id="managerRecommendationText" style="line-height: 1.45;">
+                                Alokasi karyawan telah mencukupi kebutuhan seluruh shift. Rotasi libur dapat dijalankan secara konsisten tanpa mengurangi standar pelayanan operasional.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Data shift awal diambil langsung dari database sistem (Model)
+        var databaseShifts = [
+            @if (dbShifts.Any())
+            {
+                foreach (var s in dbShifts)
+                {
+                    <text>
+                    {
+                        id: @s.Id,
+                        code: '@s.ShiftCode',
+                        name: '@Html.Raw(s.ShiftName)',
+                        staff: @(s.MinStaff > 0 ? s.MinStaff : 2)
+                    },
+                    </text>
+                }
+            }
+            else
+            {
+                <text>
+                { id: 1, code: 'P', name: 'Shift Pagi', staff: 2 },
+                { id: 2, code: 'S', name: 'Shift Sore', staff: 2 },
+                { id: 3, code: 'M', name: 'Shift Malam', staff: 1 }
+                </text>
+            }
+        ];
+
+        // Skenario aktif dalam kalkulator (disimpan di memori browser, non-database)
+        var activeShifts = JSON.parse(JSON.stringify(databaseShifts));
+        var nextCustomId = 100;
+
+        function renderShiftTable() {
+            var tbody = $('#shiftTableBody');
+            tbody.empty();
+
+            var totalDaily = 0;
+            activeShifts.forEach(function (shift, index) {
+                totalDaily += shift.staff;
+                var isOnlyOne = activeShifts.length <= 1;
+
+                var rowHtml = 
+                    '<tr>' +
+                        '<td style="text-align: center; font-weight: 600; color: #64748b;">' + (index + 1) + '</td>' +
+                        '<td style="text-align: center;">' +
+                            (shift.id >= 100 
+                                ? '<input type="text" class="form-control form-control-sm text-uppercase fw-bold text-center" style="width: 55px; font-size: 0.76rem; padding: 2px 4px; border-color: #cbd5e1; margin: 0 auto;" value="' + escapeHtml(shift.code) + '" onchange="updateShiftCode(' + shift.id + ', this.value)" />'
+                                : '<span class="code-tag">' + escapeHtml(shift.code) + '</span>') +
+                        '</td>' +
+                        '<td>' +
+                            (shift.id >= 100 
+                                ? '<input type="text" class="form-control form-control-sm fw-semibold" style="font-size: 0.8rem; padding: 2px 8px; border-color: #cbd5e1;" value="' + escapeHtml(shift.name) + '" onchange="updateShiftName(' + shift.id + ', this.value)" placeholder="Nama Shift" />'
+                                : '<strong style="color: #0f172a; font-size: 0.84rem;">' + escapeHtml(shift.name) + '</strong>') +
+                        '</td>' +
+                        '<td style="text-align: center;">' +
+                            '<div class="d-inline-flex align-items-center justify-content-center">' +
+                                '<div class="input-group input-group-sm" style="width: 110px;">' +
+                                    '<button class="stepper-btn border-end-0" type="button" onclick="adjustShiftStaff(' + shift.id + ', -1)" ' + (shift.staff <= 1 ? 'disabled style="opacity:0.4;"' : '') + '>' +
+                                        '<i class="fas fa-minus" style="font-size: 0.65rem;"></i>' +
+                                    '</button>' +
+                                    '<input type="number" class="form-control text-center fw-bold" min="1" max="99" value="' + shift.staff + '" ' +
+                                           'oninput="onShiftStaffChanged(' + shift.id + ', this.value)" style="border-color: #cbd5e1; font-size: 0.82rem;" />' +
+                                    '<button class="stepper-btn border-start-0" type="button" onclick="adjustShiftStaff(' + shift.id + ', 1)">' +
+                                        '<i class="fas fa-plus" style="font-size: 0.65rem;"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</td>' +
+                        '<td style="text-align: right;">' +
+                            '<button type="button" class="btn btn-sm btn-outline-danger border-0 p-1 px-2" ' +
+                                    'onclick="removeShiftRow(' + shift.id + ')" title="Hapus Shift" ' +
+                                    (isOnlyOne ? 'disabled style="opacity: 0.3;"' : '') + '>' +
+                                '<i class="fas fa-trash-can"></i>' +
+                            '</button>' +
+                        '</td>' +
+                    '</tr>';
+
+                tbody.append(rowHtml);
+            });
+
+            $('#tableTotalDailyStaff').text(totalDaily + ' Orang');
+            calculateRequirements();
+        }
+
+        function addCustomShift() {
+            var id = nextCustomId++;
+            activeShifts.push({
+                id: id,
+                code: 'S' + (activeShifts.length + 1),
+                name: 'Shift Tambahan ' + (activeShifts.length + 1),
+                staff: 1
+            });
+            renderShiftTable();
+        }
+
+        function removeShiftRow(id) {
+            if (activeShifts.length <= 1) return;
+            activeShifts = activeShifts.filter(function (s) { return s.id !== id; });
+            renderShiftTable();
+        }
+
+        function updateShiftCode(id, val) {
+            var shift = activeShifts.find(function(s) { return s.id === id; });
+            if (shift && val && val.trim()) {
+                shift.code = val.trim().substring(0, 4);
+                renderShiftTable();
+            }
+        }
+
+        function updateShiftName(id, val) {
+            var shift = activeShifts.find(function(s) { return s.id === id; });
+            if (shift && val && val.trim()) {
+                shift.name = val.trim();
+                renderShiftTable();
+            }
+        }
+
+        function adjustShiftStaff(id, delta) {
+            var shift = activeShifts.find(function (s) { return s.id === id; });
+            if (shift) {
+                var nextVal = shift.staff + delta;
+                if (nextVal >= 1 && nextVal <= 99) {
+                    shift.staff = nextVal;
+                    renderShiftTable();
+                }
+            }
+        }
+
+        function onShiftStaffChanged(id, val) {
+            var shift = activeShifts.find(function (s) { return s.id === id; });
+            if (shift) {
+                var num = parseInt(val) || 1;
+                if (num < 1) num = 1;
+                if (num > 99) num = 99;
+                shift.staff = num;
+                renderShiftTable();
+            }
+        }
+
+        function resetToDatabaseShifts() {
+            activeShifts = JSON.parse(JSON.stringify(databaseShifts));
+            $('#sliderWeeklyOff').val(1);
+            $('#numWeeklyOff').val(1);
+            $('#displayWeeklyOffBadge').text('1 Hari / Minggu');
+            renderShiftTable();
+        }
+
+        function onWeeklyOffSlider(val) {
+            var v = parseInt(val) || 1;
+            $('#numWeeklyOff').val(v);
+            $('#displayWeeklyOffBadge').text(v + ' Hari / Minggu');
+            calculateRequirements();
+        }
+
+        function onWeeklyOffNum(val) {
+            var v = parseInt(val) || 1;
+            if (v < 1) v = 1;
+            if (v > 4) v = 4;
+            $('#sliderWeeklyOff').val(v);
+            $('#displayWeeklyOffBadge').text(v + ' Hari / Minggu');
+            calculateRequirements();
+        }
+
+        function calculateRequirements() {
+            // 1. Total kebutuhan karyawan bertugas per hari
+            var dailyStaff = 0;
+            activeShifts.forEach(function (s) { dailyStaff += s.staff; });
+
+            // 2. Jatah libur mingguan per karyawan
+            var offDays = parseInt($('#sliderWeeklyOff').val()) || 1;
+            if (offDays < 1) offDays = 1;
+            if (offDays > 4) offDays = 4;
+
+            var workDays = 7 - offDays;
+
+            // 3. Perhitungan kebutuhan tenaga kerja operasional
+            var weeklySlots = dailyStaff * 7;
+            var exactStaff = weeklySlots / workDays;
+            var totalWorkers = Math.ceil(exactStaff);
+
+            // 4. Karyawan libur rata-rata per hari
+            var dailyOffStaff = totalWorkers - dailyStaff;
+            if (dailyOffStaff < 0) dailyOffStaff = 0;
+
+            // Update Right Side Result Card - Hero Metric
+            $('#mainResultCount').text(totalWorkers);
+            $('#executiveSummaryText').text(
+                'Unit kerja memerlukan minimal ' + totalWorkers + ' orang karyawan untuk menjamin seluruh slot shift harian selalu terisi dengan jatah ' + offDays + ' hari libur mingguan per karyawan.'
+            );
+
+            // Update Rincian Distribusi Tenaga Kerja
+            $('#infoDailyDuty').text(dailyStaff + ' Orang / Hari');
+            $('#infoDailyOff').text(dailyOffStaff + ' Orang / Hari');
+            $('#infoTotalWeeklyShifts').text(weeklySlots + ' Slot Shift');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        $(document).ready(function () {
+            renderShiftTable();
+        });
+    </script>
+}

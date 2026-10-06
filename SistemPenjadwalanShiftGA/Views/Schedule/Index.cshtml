@@ -1,0 +1,227 @@
+@using SistemPenjadwalanShiftGA.Models.Entities
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@model IEnumerable<SchedulePeriod>
+@{
+    ViewData["Title"] = "Penjadwalan";
+    var activePeriod = ViewBag.ActivePeriod as SchedulePeriod;
+    var draftPeriod = ViewBag.DraftPeriod as SchedulePeriod;
+    var prevSummary = ViewBag.PrevSummary as PreviousPeriodSummaryDto;
+    int totalPeriods = ViewBag.TotalPeriodsCount ?? (Model != null ? Model.Count() : 0);
+    var today = DateTime.UtcNow.AddHours(7).Date;
+}
+
+@section Breadcrumbs {
+    <li class="breadcrumbs-active">Penjadwalan</li>
+}
+
+<style>
+    @@keyframes pulse-green {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .pulse-dot {
+        animation: pulse-green 1.8s infinite ease-in-out;
+    }
+    .continuity-banner {
+        background: #f0fdfa;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 1.25rem 1.35rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .mb-1\.5 { margin-bottom: 0.375rem !important; }
+</style>
+
+@if (activePeriod != null)
+{
+    var isOngoing = today >= activePeriod.StartDate.Date && today <= activePeriod.EndDate.Date;
+    var isPast = today > activePeriod.EndDate.Date;
+
+    <!-- Banner Status Jadwal Berjalan (Sama dengan tampilan di Generate) -->
+    <div class="continuity-banner mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); background: #f0fdfa;">
+        <div class="d-flex align-items-start gap-3">
+            <div class="d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #e6fffa; color: #0f766e; border-radius: 10px; font-size: 1.2rem; margin-top: 2px;">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div>
+                <div class="mb-1.5">
+                    @if (isOngoing)
+                    {
+                        <span class="status-pill pill-active" style="font-size: 0.72rem; padding: 2.5px 8.5px; font-weight: 600;">
+                            <span class="dot-indicator pulse-dot"></span>Sedang Berjalan
+                        </span>
+                    }
+                    else if (isPast)
+                    {
+                        <span class="status-pill" style="background: #f1f5f9; color: #475569; font-size: 0.72rem; padding: 2.5px 8.5px; font-weight: 500;">
+                            Periode Sebelumnya
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="status-pill pill-active" style="font-size: 0.72rem; padding: 2.5px 8.5px; font-weight: 600;">
+                            <span class="dot-indicator"></span>Resmi Berlaku
+                        </span>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <span class="badge" style="background: #e6fffa; color: #0f766e; border: 1px solid #b2f5ea; font-family: monospace; font-size: 0.78rem; font-weight: 700; padding: 3px 8px;">
+                        @(string.IsNullOrEmpty(activePeriod.ScheduleCode) ? $"SCH-{activePeriod.Id:D4}" : activePeriod.ScheduleCode)
+                    </span>
+                    <h4 class="fw-bold text-slate-900 mb-0" style="font-size: 1.02rem; letter-spacing: -0.2px;">
+                        @activePeriod.PeriodName
+                    </h4>
+                </div>
+                <p class="text-muted mb-0" style="font-size: 0.78rem; line-height: 1.45;">
+                    Periode jadwal rotasi kerja karyawan yang resmi berlaku dan aktif sebagai acuan operasional sistem saat ini.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <a href="/Schedule/Detail/@activePeriod.Id" class="btn-secondary-admin" style="font-size: 0.8rem; padding: 8px 14px; text-decoration: none;" title="Lihat jadwal operasional">
+                <i class="fas fa-arrow-up-right-from-square text-muted me-1.5"></i> Lihat Jadwal
+            </a>
+        </div>
+    </div>
+}
+
+<!-- Draft In Progress Card (if any) -->
+@if (draftPeriod != null)
+{
+    var draftDays = (draftPeriod.EndDate.Date - draftPeriod.StartDate.Date).Days + 1;
+    var displayDraftDuration = $"{draftDays} Hari";
+
+    <div class="admin-card mb-4" style="border: 1px solid #fde68a; background: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); overflow: hidden;">
+        <div class="py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; background: #fef3c7; color: #b45309; border-radius: 10px; font-size: 1.15rem;">
+                    <i class="fas fa-file-pen"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-family: monospace; font-size: 0.75rem; font-weight: 700; padding: 2.5px 8px;">
+                            @(string.IsNullOrEmpty(draftPeriod.ScheduleCode) ? $"SCH-{draftPeriod.Id:D4}" : draftPeriod.ScheduleCode)
+                        </span>
+                        <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 1.08rem;">@draftPeriod.PeriodName</h5>
+                        <span class="status-pill pill-pending" style="font-size: 0.72rem; padding: 2px 8px;">
+                            <span class="dot-indicator"></span>Draft Menunggu Publikasi
+                        </span>
+                    </div>
+                    <div class="text-muted mt-0.5" style="font-size: 0.8rem;">
+                        <i class="fas fa-calendar-day me-1 text-teal"></i>
+                        @draftPeriod.StartDate.ToString("dd MMMM yyyy") – @draftPeriod.EndDate.ToString("dd MMMM yyyy")
+                        <span class="code-tag ms-2" style="font-size: 0.72rem;">@displayDraftDuration</span>
+                        <span class="ms-2">• Disusun @(draftPeriod.GeneratedAt?.ToString("dd MMM HH:mm") ?? "-")</span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="/Schedule/Detail/@draftPeriod.Id" class="btn-primary-admin py-2 px-3.5" style="font-size: 0.84rem; font-weight: 700;">
+                    <i class="fas fa-table-cells me-1.5"></i> Tinjau &amp; Publikasikan
+                </a>
+                <button type="button" class="btn-danger-admin py-2 px-3" onclick="deleteSchedule('@draftPeriod.Id', false)" style="font-size: 0.84rem;">
+                    <i class="fas fa-trash me-1"></i> Hapus Draft
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Card Aksi Jadwal (Sama seperti saat belum ada history) -->
+<div class="admin-card text-center py-5 mb-4" style="border: 1px solid #cbd5e1; border-radius: 12px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+    <div class="stat-icon-wrapper stat-icon-teal mx-auto mb-3" style="width:56px; height:56px; font-size:1.5rem; border-radius:12px;">
+        <i class="fas fa-calendar-plus"></i>
+    </div>
+    @if (activePeriod == null && draftPeriod == null)
+    {
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Belum Ada Jadwal Kerja</h4>
+        <p class="text-muted mx-auto mb-4" style="max-width:400px; font-size:0.85rem;">
+            Saat ini belum ada jadwal operasional yang aktif atau tersimpan sebagai draft. Anda dapat membuat jadwal baru sekarang.
+        </p>
+    }
+    else
+    {
+        <h4 class="fw-bold mb-1" style="color:#0f172a;">Buat Jadwal Baru</h4>
+        <p class="text-muted mx-auto mb-4" style="max-width:420px; font-size:0.85rem;">
+            Anda dapat membuat periode jadwal baru sekarang untuk melanjutkan operasional karyawan.
+        </p>
+    }
+    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+        <a href="/Schedule/Generate" class="btn-primary-admin py-2 px-4" style="font-size:0.9rem;">
+            <i class="fas fa-calendar-plus me-2"></i> Buat Jadwal Baru
+        </a>
+    </div>
+</div>
+
+<form id="antiForgeryForm">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        function publishSchedule(id) {
+            Swal.fire({
+                title: 'Publikasikan Jadwal?',
+                text: "Jadwal yang dipublish akan resmi berlaku bagi seluruh karyawan.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0f766e',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Publikasikan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/Publish/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Jadwal kerja resmi telah dipublikasikan.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function deleteSchedule(id, isPublished) {
+            var title = isPublished ? 'Hapus Jadwal Resmi?' : 'Hapus Draft Jadwal?';
+            var text = isPublished 
+                ? 'Jadwal ini sudah dipublikasikan. Menghapus jadwal akan menghapus seluruh detail penugasan karyawan terkait.'
+                : 'Draft jadwal akan dihapus permanen dari sistem.';
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.post('/Schedule/Delete/' + id, { __RequestVerificationToken: token }, function(res) {
+                        if(res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Terhapus!',
+                                text: 'Jadwal telah berhasil dihapus.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}

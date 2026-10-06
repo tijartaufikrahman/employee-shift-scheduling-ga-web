@@ -1,0 +1,154 @@
+@{
+    Layout = null;
+    var isDraft = (string)ViewBag.Status == "Draft";
+}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verifikasi Dokumen Resmi - SisJad</title>
+    <!-- Google Font: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+    <style>
+        body { 
+            background-color: #0c1322; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 1.5rem;
+        }
+        .verify-card { 
+            background: #ffffff; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); 
+            padding: 40px 30px; 
+            text-align: center; 
+            max-width: 440px; 
+            width: 100%; 
+        }
+        .icon-box { 
+            width: 80px; 
+            height: 80px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0 auto 20px; 
+            font-size: 36px; 
+        }
+        .valid-icon { 
+            background-color: #ecfdf5; 
+            color: #059669; 
+            border: 2px solid #a7f3d0;
+        }
+        .draft-icon {
+            background-color: #fffbeb;
+            color: #d97706;
+            border: 2px solid #fde68a;
+        }
+        .invalid-icon { 
+            background-color: #fef2f2; 
+            color: #dc2626; 
+            border: 2px solid #fecaca;
+        }
+        .brand-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    @if(ViewBag.IsValid == true)
+    {
+        <div class="verify-card">
+            <div class="icon-box @(isDraft ? "draft-icon" : "valid-icon")">
+                <i class="fas @(isDraft ? "fa-file-lines" : "fa-certificate")"></i>
+            </div>
+            
+            @if(isDraft)
+            {
+                <div class="brand-pill mb-3" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a;">
+                    <i class="fas fa-file-pen"></i> Dokumen Draft Terverifikasi
+                </div>
+                <h3 class="fw-bold mb-2" style="color:#0f172a; font-size:1.35rem;">Draft Jadwal Terdaftar</h3>
+                <p class="text-muted mb-4" style="font-size:0.83rem;">
+                    QR Code ini valid. Dokumen ini adalah draft jadwal yang telah digenerate pada sistem dan menunggu publikasi final.
+                </p>
+            }
+            else
+            {
+                <div class="brand-pill mb-3" style="background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4;">
+                    <i class="fas fa-shield-check"></i> Dokumen Resmi Terverifikasi (Published)
+                </div>
+                <h3 class="fw-bold mb-2" style="color:#0f172a; font-size:1.35rem;">Jadwal Resmi & Sah</h3>
+                <p class="text-muted mb-4" style="font-size:0.83rem;">
+                    QR Code ini valid dan merupakan dokumen jadwal kerja resmi yang telah disetujui Manager Operasional.
+                </p>
+            }
+            
+            <div class="p-3 rounded-3 text-start mb-3" style="background:#f8fafc; border:1px solid #e2e8f0; font-size:0.82rem;">
+                @if (!string.IsNullOrEmpty(ViewBag.ScheduleCode))
+                {
+                    <div class="mb-2">
+                        <span class="text-muted d-block" style="font-size:0.72rem;">KODE PENJADWALAN:</span>
+                        <strong style="color:#0f766e; font-size:0.95rem;">@ViewBag.ScheduleCode</strong>
+                    </div>
+                }
+                <div class="mb-2">
+                    <span class="text-muted d-block" style="font-size:0.72rem;">NAMA PERIODE:</span>
+                    <strong style="color:#0f172a; font-size:0.95rem;">@ViewBag.PeriodName</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted d-block" style="font-size:0.72rem;">RENTANG TANGGAL:</span>
+                    <strong style="color:#0f766e;">@ViewBag.StartDate - @ViewBag.EndDate</strong>
+                </div>
+                <div>
+                    <span class="text-muted d-block" style="font-size:0.72rem;">WAKTU PENERBITAN:</span>
+                    <span style="color:#475569;">@ViewBag.GeneratedAt</span>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mb-4">
+                <a href="/Verify/Pdf/@ViewBag.Code" class="btn btn-primary py-2.5 fw-semibold shadow-sm text-white" style="background:#0f766e; border-color:#0f766e; border-radius:10px; font-size:0.9rem;" target="_blank">
+                    <i class="fas fa-file-pdf me-2"></i> Buka Dokumen PDF Resmi
+                </a>
+            </div>
+            
+            <div class="text-muted" style="font-size:0.75rem;">
+                <i class="fas fa-calendar-days text-teal me-1"></i> SisJad &bull; Sistem Penjadwalan Kerja
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="verify-card">
+            <div class="icon-box invalid-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-danger fw-bold mb-2" style="font-size:1.4rem;">Verifikasi Gagal</h3>
+            <p class="text-muted mb-4" style="font-size:0.83rem;">
+                Kode verifikasi QR Code tidak dikenali atau dokumen jadwal kerja ini telah dihapus dari database sistem.
+            </p>
+            
+            <div class="text-muted" style="font-size:0.75rem;">
+                <i class="fas fa-calendar-days text-danger me-1"></i> SisJad &bull; Sistem Penjadwalan Kerja
+            </div>
+        </div>
+    }
+
+</body>
+</html>

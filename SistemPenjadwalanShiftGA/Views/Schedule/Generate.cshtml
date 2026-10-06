@@ -1,0 +1,1199 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@model ScheduleGenerateViewModel
+@{
+    ViewData["Title"] = "Generate Jadwal Baru";
+}
+
+@section Breadcrumbs {
+    <li><a href="/Schedule/Index">Penjadwalan</a></li>
+    <li class="breadcrumbs-sep">/</li>
+    <li class="breadcrumbs-active">Generate Jadwal Baru</li>
+}
+
+<style>
+    .loading-overlay { 
+        position: fixed; 
+        inset: 0; 
+        background: rgba(15, 23, 42, 0.78); 
+        backdrop-filter: blur(5px); 
+        z-index: 9999; 
+        display: none; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        color: #ffffff;
+    }
+    @@keyframes pulse-green {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .pulse-dot {
+        animation: pulse-green 1.8s infinite ease-in-out;
+    }
+    .continuity-banner {
+        background: #f0fdfa;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 1.25rem 1.35rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .mb-1\.5 { margin-bottom: 0.375rem !important; }
+    .mb-2\.5 { margin-bottom: 0.625rem !important; }
+    .mb-3\.5 { margin-bottom: 0.875rem !important; }
+    .mt-1\.5 { margin-top: 0.375rem !important; }
+    .mt-2\.5 { margin-top: 0.625rem !important; }
+    .py-1\.5 { padding-top: 0.375rem !important; padding-bottom: 0.375rem !important; }
+    .py-2\.5 { padding-top: 0.625rem !important; padding-bottom: 0.625rem !important; }
+    .px-2\.5 { padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
+    .px-3\.5 { padding-left: 0.875rem !important; padding-right: 0.875rem !important; }
+    .param-group-box {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem 1.25rem 1.35rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .param-group-box:focus-within {
+        border-color: #99f6e4;
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.06);
+    }
+    .duration-card { 
+        border: 1.5px solid #e2e8f0; 
+        border-radius: 8px; 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+        padding: 10px 6px; 
+        text-align: center; 
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        user-select: none;
+    }
+    .duration-card:hover { 
+        border-color: #0d9488; 
+        background-color: #f0fdfa; 
+        transform: translateY(-1px);
+    }
+    .duration-card.selected { 
+        border-color: #0d9488; 
+        background-color: #f0fdfa; 
+        box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.22);
+    }
+    .duration-card.selected::after {
+        content: "\f00c";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        position: absolute;
+        top: 4px;
+        right: 5px;
+        font-size: 0.65rem;
+        color: #0d9488;
+    }
+    .duration-card input { display: none; }
+
+    .stepper-btn {
+        width: 32px;
+        height: 31px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .stepper-btn:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+    .stepper-btn:active {
+        transform: scale(0.95);
+    }
+    .form-range::-webkit-slider-thumb {
+        background: #0d9488;
+    }
+    .form-range::-moz-range-thumb {
+        background: #0d9488;
+    }
+
+    .btn-preset {
+        border: 1.5px solid #e2e8f0;
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 8px 10px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-align: left;
+    }
+    .btn-preset:hover {
+        border-color: #0d9488;
+        background-color: #f0fdfa;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(13, 148, 136, 0.1);
+    }
+    .btn-preset.active {
+        border-color: #0d9488;
+        background-color: #f0fdfa;
+        box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.22);
+    }
+
+    /* Readiness Matrix Table Specific Styles */
+    .matrix-table .matrix-no-col {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        position: sticky;
+        left: 0;
+        z-index: 6;
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+        text-align: center;
+    }
+    .matrix-table thead th.matrix-no-col {
+        z-index: 16;
+        background: #f1f5f9;
+    }
+    .matrix-table .emp-col {
+        left: 44px !important;
+        position: sticky;
+        z-index: 5;
+        background: #ffffff;
+        border-right: 2px solid #cbd5e1;
+        min-width: 195px;
+        text-align: left;
+        padding-left: 12px;
+    }
+    .matrix-table thead th.emp-col {
+        z-index: 15;
+        left: 44px !important;
+        background: #f1f5f9;
+    }
+
+    .readiness-cell {
+        padding: 6px 4px !important;
+        transition: filter 0.15s;
+        user-select: none;
+        cursor: pointer;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .readiness-cell:hover {
+        filter: brightness(0.92);
+    }
+
+    .readiness-cell-ready {
+        background-color: #ffffff;
+        color: #94a3b8;
+    }
+
+    .readiness-cell-approved {
+        background-color: #fee2e2;
+    }
+    .readiness-badge-cuti {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #d1fae5;
+        color: #065f46;
+        font-weight: 700;
+        font-size: 0.66rem;
+        padding: 2.5px 6px;
+        border-radius: 4px;
+        border: 1px solid #6ee7b7;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+    .readiness-badge-izin {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: 700;
+        font-size: 0.66rem;
+        padding: 2.5px 6px;
+        border-radius: 4px;
+        border: 1px solid #93c5fd;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+    .readiness-badge-sakit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fee2e2;
+        color: #991b1b;
+        font-weight: 700;
+        font-size: 0.66rem;
+        padding: 2.5px 6px;
+        border-radius: 4px;
+        border: 1px solid #fca5a5;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+
+    .readiness-cell-pending {
+        background-color: #fef3c7;
+    }
+    .readiness-badge-pending {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fde68a;
+        color: #92400e;
+        font-weight: 700;
+        font-size: 0.62rem;
+        padding: 2.5px 5px;
+        border-radius: 4px;
+        border: 1px solid #fcd34d;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+    }
+</style>
+
+<!-- Banner Status Jadwal Berjalan (Dipisah Mandiri di Luar Pengaturan Jadwal Kerja) -->
+@if (Model?.PreviousPeriod != null)
+{
+    var todayDate = DateTime.UtcNow.AddHours(7).Date;
+    var isOngoing = todayDate >= Model.PreviousPeriod.StartDate.Date && todayDate <= Model.PreviousPeriod.EndDate.Date;
+    var isPast = todayDate > Model.PreviousPeriod.EndDate.Date;
+
+    <div class="continuity-banner mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); background: #f0fdfa;">
+        <div class="d-flex align-items-start gap-3">
+            <div class="d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background: #e6fffa; color: #0f766e; border-radius: 10px; font-size: 1.2rem; margin-top: 2px;">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div>
+                <div class="mb-1.5">
+                    @if (isOngoing)
+                    {
+                        <span class="status-pill pill-active" style="font-size: 0.72rem; padding: 2.5px 8.5px; font-weight: 600;">
+                            <span class="dot-indicator pulse-dot"></span>Sedang Berjalan
+                        </span>
+                    }
+                    else if (isPast)
+                    {
+                        <span class="status-pill" style="background: #f1f5f9; color: #475569; font-size: 0.72rem; padding: 2.5px 8.5px; font-weight: 500;">
+                            Periode Sebelumnya
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="status-pill pill-active" style="font-size: 0.72rem; padding: 2.5px 8.5px; font-weight: 600;">
+                            <span class="dot-indicator"></span>Resmi Berlaku
+                        </span>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <span class="badge" style="background: #e6fffa; color: #0f766e; border: 1px solid #b2f5ea; font-family: monospace; font-size: 0.78rem; font-weight: 700; padding: 3px 8px;">
+                        @(string.IsNullOrEmpty(Model.PreviousPeriod.ScheduleCode) ? $"SCH-{Model.PreviousPeriod.Id:D4}" : Model.PreviousPeriod.ScheduleCode)
+                    </span>
+                    <h4 class="fw-bold text-slate-900 mb-0" style="font-size: 1.02rem; letter-spacing: -0.2px;">
+                        @Model.PreviousPeriod.PeriodName
+                    </h4>
+                </div>
+                <p class="text-muted mb-0" style="font-size: 0.78rem; line-height: 1.45;">
+                    Periode jadwal rotasi kerja karyawan yang resmi berlaku dan aktif sebagai acuan operasional sistem saat ini.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+            <a href="/Schedule/Detail/@Model.PreviousPeriod.Id" target="_blank" class="btn-secondary-admin" style="font-size: 0.8rem; padding: 8px 14px; text-decoration: none;" title="Lihat jadwal operasional">
+                <i class="fas fa-arrow-up-right-from-square text-muted me-1.5"></i> Lihat Jadwal
+            </a>
+        </div>
+    </div>
+}
+
+<!-- Full Width Parameter Card -->
+<div class="admin-card mb-4" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+    <div class="admin-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+        <div>
+            <h3 class="admin-card-title mb-0" style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+                Pengaturan Jadwal Kerja
+            </h3>
+            <p class="admin-card-desc mb-0 mt-0.5" style="font-size: 0.78rem; color: #64748b;">
+                Tentukan tanggal mulai, durasi kerja, batasan hari kerja, serta acuan riwayat jadwal karyawan unit kerja
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/Schedule/Index" class="btn-secondary-admin py-1.5 px-3" style="font-size: 0.8rem; font-weight: 600;">
+                <i class="fas fa-arrow-left me-1.5 text-muted"></i> Kembali ke Jadwal
+            </a>
+        </div>
+    </div>
+    <div class="admin-card-body p-4">
+        <form id="generateForm" asp-action="Generate" method="post">
+            @Html.AntiForgeryToken()
+
+            <!-- 4 Parameter Groupings (1, 2, 3, 4) -->
+            <div class="row g-3 g-xl-4 mb-4">
+                <!-- Group 1: Waktu & Durasi Periode (col-xl-3 col-md-6) -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="param-group-box h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                <span style="width: 24px; height: 24px; background: #0f766e; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;">1</span>
+                                <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.92rem;">Waktu &amp; Durasi Kerja</h5>
+                            </div>
+
+                            <!-- Tanggal Mulai Periode -->
+                            <div class="mb-3.5 pb-2">
+                                <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                    <label class="form-label fw-bold mb-0 text-slate-800" for="StartDate" style="font-size: 0.82rem;">
+                                        Tanggal Mulai Periode
+                                    </label>
+                                    <span class="status-pill pill-active" style="font-size: 0.68rem; padding: 1px 7px;">
+                                        WIB
+                                    </span>
+                                </div>
+                                <input type="date" asp-for="StartDate" id="StartDate" class="form-control" 
+                                       style="font-size: 0.86rem; font-weight: 600; border-color: #cbd5e1;" 
+                                       value="@(Model?.StartDate > DateTime.MinValue ? Model.StartDate.ToString("yyyy-MM-dd") : DateTime.UtcNow.AddHours(7).ToString("yyyy-MM-dd"))" required />
+                                <span asp-validation-for="StartDate" class="text-danger small"></span>
+                                <small class="text-muted d-block mt-1.5" style="font-size: 0.72rem; line-height: 1.35;">
+                                    Hari pertama berlakunya penugasan shift pada periode baru.
+                                </small>
+                            </div>
+
+                            <!-- Durasi Periode Penjadwalan -->
+                            <div class="pt-1">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label fw-bold mb-0 text-slate-800" style="font-size: 0.82rem;">
+                                        <i class="fas fa-arrows-left-right me-1.5 text-teal"></i> Durasi Periode
+                                    </label>
+                                    <span class="text-muted" style="font-size: 0.72rem;">Pilih salah satu</span>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <label class="duration-card h-100 @(Model?.DurationType == "1_Week" ? "selected" : "")" id="card1_Week">
+                                            <input type="radio" name="DurationTypeOption" value="1_Week" id="radio1Week" @(Model?.DurationType == "1_Week" ? "checked" : "") onchange="onDurationOptionChanged('1_Week')" />
+                                            <i class="fas fa-calendar-week mb-1 text-teal d-block" style="font-size: 1.05rem;"></i>
+                                            <span class="fw-bold d-block text-slate-900" style="font-size: 0.78rem;">1 Minggu</span>
+                                            <small class="text-muted d-block" style="font-size: 0.68rem;">7 Hari</small>
+                                        </label>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="duration-card h-100 @(Model?.DurationType == "2_Weeks" || string.IsNullOrEmpty(Model?.DurationType) ? "selected" : "")" id="card2_Weeks">
+                                            <input type="radio" name="DurationTypeOption" value="2_Weeks" id="radio2Weeks" @(Model?.DurationType == "2_Weeks" || string.IsNullOrEmpty(Model?.DurationType) ? "checked" : "") onchange="onDurationOptionChanged('2_Weeks')" />
+                                            <i class="fas fa-calendar-alt mb-1 text-primary d-block" style="font-size: 1.05rem;"></i>
+                                            <span class="fw-bold d-block text-slate-900" style="font-size: 0.78rem;">2 Minggu</span>
+                                            <small class="text-muted d-block" style="font-size: 0.68rem;">14 Hari</small>
+                                        </label>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="duration-card h-100 @(Model?.DurationType != "1_Week" && Model?.DurationType != "2_Weeks" && !string.IsNullOrEmpty(Model?.DurationType) ? "selected" : "")" id="cardCustom">
+                                            <input type="radio" name="DurationTypeOption" value="custom" id="radioCustom" @(Model?.DurationType != "1_Week" && Model?.DurationType != "2_Weeks" && !string.IsNullOrEmpty(Model?.DurationType) ? "checked" : "") onchange="onDurationOptionChanged('custom')" />
+                                            <i class="fas fa-calendar-plus mb-1 text-purple d-block" style="font-size: 1.05rem;"></i>
+                                            <span class="fw-bold d-block text-slate-900" style="font-size: 0.78rem;">Kustom</span>
+                                            <small class="text-muted d-block" id="customCardDesc" style="font-size: 0.68rem;">Minggu</small>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Hidden Field Actual DurationType Submitted -->
+                                <input type="hidden" asp-for="DurationType" id="actualDurationType" value="@(Model?.DurationType ?? "2_Weeks")" />
+
+                                <!-- Custom Weeks Input Box -->
+                                <div id="customWeeksContainer" class="mt-2 p-2 rounded-3" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1;">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <label class="form-label fw-bold mb-0 text-slate-800" style="font-size: 0.78rem;">
+                                            Jumlah Minggu:
+                                        </label>
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <div class="input-group input-group-sm" style="width: 115px;">
+                                                <button class="stepper-btn border-end-0" type="button" onclick="adjustCustomWeeks(-1)">
+                                                    <i class="fas fa-minus" style="font-size: 0.68rem;"></i>
+                                                </button>
+                                                <input type="number" id="customWeeksInput" class="form-control form-control-sm text-center fw-bold" min="1" max="12" value="3" oninput="onCustomWeeksInput()" style="border-color: #cbd5e1;" />
+                                                <button class="stepper-btn border-start-0" type="button" onclick="adjustCustomWeeks(1)">
+                                                    <i class="fas fa-plus" style="font-size: 0.68rem;"></i>
+                                                </button>
+                                            </div>
+                                            <span class="status-pill pill-role" id="customDaysBadge" style="font-size: 0.75rem; font-weight: 700;">
+                                                21 Hari
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 2: Batas Kerja & Kuota Libur (col-xl-3 col-md-6) -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="param-group-box h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                <span style="width: 24px; height: 24px; background: #0f766e; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;">2</span>
+                                <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.92rem;">Batas Kerja &amp; Libur (OFF)</h5>
+                            </div>
+
+                            <!-- Batas Maksimal Kerja Berturut-turut -->
+                            <div class="mb-3 pb-2 border-bottom border-light">
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <label class="form-label fw-bold mb-0 text-slate-800" style="font-size: 0.82rem;">
+                                        Maks. Kerja Beruntun
+                                    </label>
+                                    <span id="maxDaysVal" class="status-pill pill-role" style="font-size: 0.75rem; font-weight: 700;">5 Hari</span>
+                                </div>
+                                <input type="range" asp-for="MaxConsecutiveDays" class="form-range my-1.5" min="3" max="7" step="1" value="5" oninput="document.getElementById('maxDaysVal').innerText = this.value + ' Hari'" />
+                                <div class="d-flex justify-content-between text-muted" style="font-size: 0.7rem;">
+                                    <span>3 Hari (Ketat)</span>
+                                    <span class="fw-semibold text-slate-700">5 Hari (Standar)</span>
+                                    <span>7 Hari (Fleksibel)</span>
+                                </div>
+                            </div>
+
+                            <!-- Batas Hari Libur Mingguan (OFF) per Karyawan -->
+                            <div class="pt-1">
+                                 <div class="d-flex justify-content-between align-items-center mb-1">
+                                     <label class="form-label fw-bold mb-0 text-slate-800" style="font-size: 0.82rem;">
+                                         Hari Libur Mingguan per Karyawan
+                                     </label>
+                                 </div>
+                                 <div class="d-flex align-items-center gap-2 my-2">
+                                     <input type="range" asp-for="MaxOffDays" id="maxOffDaysSlider" class="form-range flex-grow-1" min="1" max="4" step="1" value="@(Model?.MaxOffDays > 0 ? Model.MaxOffDays : 1)" oninput="onWeeklyOffDaysInput(this.value)" />
+                                     <div class="input-group input-group-sm flex-shrink-0" style="width: 110px;">
+                                         <input type="number" id="maxOffDaysNum" class="form-control text-center fw-bold" min="1" max="4" value="@(Model?.MaxOffDays > 0 ? Model.MaxOffDays : 1)" oninput="onWeeklyOffDaysInput(this.value)" style="border-color: #cbd5e1; font-size: 0.82rem;" />
+                                         <span class="input-group-text bg-light text-muted px-2" style="font-size: 0.72rem;">Hari / Mg</span>
+                                     </div>
+                                 </div>
+                                 <div class="d-flex justify-content-between text-muted mb-2" style="font-size: 0.7rem;">
+                                     <span>1 Hari (Pola 6-1)</span>
+                                     <span class="text-teal fw-semibold">2 Hari (Pola 5-2)</span>
+                                     <span>Maks 4 Hari</span>
+                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- System Proportional Notice (Pinned to bottom for equal-height balance) -->
+                        <div class="mt-auto pt-0">
+                            <div class="p-2 rounded-3 d-flex align-items-center gap-2" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.72rem; color: #475569;">
+                                <span>Hari libur mingguan dihitung proporsional sesuai durasi periode dan dibagi merata untuk seluruh karyawan.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 3: Kebijakan Operasional Khusus (col-xl-3 col-md-6) -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="param-group-box h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                <span style="width: 24px; height: 24px; background: #0f766e; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;">3</span>
+                                <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.92rem;">Kebijakan Operasional</h5>
+                            </div>
+
+                            <!-- Hidden Field for NightShiftId (Auto-Detected by System) -->
+                            <input type="hidden" asp-for="NightShiftId" value="@Model?.NightShiftId" />
+
+                            <!-- Prevent Night to Morning -->
+                            <div class="p-3 rounded-3 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" asp-for="PreventNightToMorning" id="preventNightSwitch" checked="@(Model?.PreventNightToMorning ?? true)" style="cursor: pointer;" />
+                                    <label class="form-check-label fw-bold text-slate-850" for="preventNightSwitch" style="font-size: 0.82rem; cursor: pointer;">
+                                        Larangan Malam ke Pagi (Jeda 24 Jam)
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.71rem; line-height: 1.4;">
+                                    Karyawan shift malam otomatis diberikan jeda istirahat minimal 24 jam dan dilarang dijadwalkan shift pagi keesokan harinya.
+                                </small>
+                            </div>
+
+                            <!-- Min Senior per Shift -->
+                            <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <label class="form-label fw-bold text-slate-850 mb-0" style="font-size: 0.82rem;">
+                                        Min. Senior / Shift
+                                    </label>
+                                    <span class="status-pill pill-role" id="minSeniorBadge" style="font-size: 0.75rem; font-weight: 700;">@(Model?.MinSenior ?? 1) Karyawan</span>
+                                </div>
+                                <div class="input-group input-group-sm my-2">
+                                    <button class="stepper-btn border-end-0" type="button" onclick="adjustMinSenior(-1)">
+                                        <i class="fas fa-minus" style="font-size: 0.68rem;"></i>
+                                    </button>
+                                    <input type="number" asp-for="MinSenior" id="minSeniorInput" class="form-control text-center fw-bold" min="0" max="5" value="@(Model?.MinSenior ?? 1)" oninput="onMinSeniorInput(this.value)" style="border-color: #cbd5e1;" />
+                                    <button class="stepper-btn border-start-0" type="button" onclick="adjustMinSenior(1)">
+                                        <i class="fas fa-plus" style="font-size: 0.68rem;"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block" style="font-size: 0.71rem; line-height: 1.35;">
+                                    Kuota minimal karyawan senior untuk supervisi dan pembimbingan di tiap shift kerja.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 4: Acuan Riwayat Jadwal (col-xl-3 col-md-6) -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="param-group-box h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                                <span style="width: 24px; height: 24px; background: #0f766e; color: #ffffff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem;">4</span>
+                                <h5 class="fw-bold mb-0 text-slate-900" style="font-size: 0.92rem;">Acuan Riwayat Jadwal</h5>
+                            </div>
+
+                            <!-- Select Riwayat Periode -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold mb-1.5 text-slate-800" for="previousPeriodSelect" style="font-size: 0.82rem;">
+                                    Sambung Dari Periode
+                                </label>
+                                <select asp-for="PreviousPeriodId" id="previousPeriodSelect" class="form-select form-select-sm fw-semibold" style="font-size: 0.82rem; border-color: #cbd5e1;" onchange="onPreviousPeriodChanged(this)">
+                                    @if (Model?.PreviousPeriod != null)
+                                    {
+                                        var todayD = DateTime.UtcNow.AddHours(7).Date;
+                                        var isAct = todayD >= Model.PreviousPeriod.StartDate.Date && todayD <= Model.PreviousPeriod.EndDate.Date;
+                                        <option value="@Model.PreviousPeriod.Id" selected 
+                                                data-start="@Model.PreviousPeriod.StartDate.ToString("dd MMM yyyy")" 
+                                                data-end="@Model.PreviousPeriod.EndDate.ToString("dd MMM yyyy")" 
+                                                data-nextstart="@Model.PreviousPeriod.RecommendedNextStartDate.ToString("yyyy-MM-dd")"
+                                                data-nextstart-formatted="@Model.PreviousPeriod.RecommendedNextStartDate.ToString("dd MMM yyyy")"
+                                                data-name="@Model.PreviousPeriod.PeriodName"
+                                                data-status="@(isAct ? "Sedang Berjalan" : "Resmi Berlaku")">
+                                            @(isAct ? "⭐ [Sedang Berjalan] " : "[Terbaru] ") @Model.PreviousPeriod.PeriodName
+                                        </option>
+                                    }
+
+                                    @if (Model?.AvailableHistoryPeriods != null && Model.AvailableHistoryPeriods.Any())
+                                    {
+                                        foreach (var hp in Model.AvailableHistoryPeriods.Where(p => Model?.PreviousPeriod == null || p.Id != Model.PreviousPeriod.Id))
+                                        {
+                                            <option value="@hp.Id"
+                                                    data-start="@hp.StartDate.ToString("dd MMM yyyy")"
+                                                    data-end="@hp.EndDate.ToString("dd MMM yyyy")"
+                                                    data-nextstart="@hp.EndDate.AddDays(1).ToString("yyyy-MM-dd")"
+                                                    data-nextstart-formatted="@hp.EndDate.AddDays(1).ToString("dd MMM yyyy")"
+                                                    data-name="@hp.PeriodName"
+                                                    data-status="Riwayat">
+                                                @hp.PeriodName (@hp.StartDate.ToString("dd MMM") – @hp.EndDate.ToString("dd MMM yyyy"))
+                                            </option>
+                                        }
+                                    }
+
+                                    <option value="0" data-start="" data-end="" data-nextstart="" data-nextstart-formatted="" data-name="Tanpa Riwayat" data-status="Mandiri">
+                                        Tanpa Riwayat (Mulai Baru)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Dynamic Selected Period Card Summary -->
+                            <div id="historyPeriodPreviewBox" class="p-2 rounded-3 mb-2" style="background: #f0fdfa; border: 1px solid #ccfbf1;">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="status-pill pill-active" id="historyStatusPill" style="font-size: 0.68rem; padding: 1.5px 7px;">
+                                        <span class="dot-indicator pulse-dot"></span><span id="historyStatusText">Sedang Berjalan</span>
+                                    </span>
+                                    <span class="text-muted" id="historyRangeText" style="font-size: 0.72rem; font-weight: 600;">
+                                        @(Model?.PreviousPeriod != null ? $"{Model.PreviousPeriod.StartDate:dd MMM} – {Model.PreviousPeriod.EndDate:dd MMM yyyy}" : "")
+                                    </span>
+                                </div>
+                                <div class="text-slate-800 fw-bold mb-1" id="historyNameText" style="font-size: 0.8rem;">
+                                    @(Model?.PreviousPeriod?.PeriodName ?? "Pilih Riwayat")
+                                </div>
+                                <small class="text-muted d-block" id="historyDescText" style="font-size: 0.71rem; line-height: 1.35;">
+                                    Rotasi shift & jeda istirahat shift malam karyawan periode ini otomatis dilanjutkan ke periode baru.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Action / Generate Button -->
+            <div class="pt-4 mt-3 border-top d-flex flex-column align-items-center justify-content-center">
+                <button type="submit" class="btn-primary-admin py-2 px-5 shadow-sm" id="btnSubmit" style="font-size: 0.92rem; font-weight: 700; border-radius: 10px;">
+                    <i class="fas fa-calendar-check me-2"></i> Buat Pratinjau Jadwal
+                </button>
+                <div class="d-flex align-items-center gap-2 text-muted mt-2" style="font-size: 0.75rem;">
+                    <i class="fas fa-shield-halved text-teal"></i>
+                    <span>Jadwal disusun dalam format pratinjau terlebih dahulu untuk Anda tinjau &amp; sesuaikan sebelum disimpan resmi.</span>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Pratinjau Kesiapan Karyawan & Pengajuan Dispensasi (Single Full-Width Card - Matrix Layout) -->
+<div class="admin-card mb-4" id="readinessCard" style="border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+    <div class="admin-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background: #ffffff; border-bottom: 1px solid #e2e8f0;">
+        <div>
+            <h3 class="admin-card-title d-flex align-items-center gap-2 mb-1" style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">
+                <i class="fas fa-clipboard-user text-teal"></i> Informasi Kesiapan Kerja &amp; Pengajuan Dispensasi (Cuti, Izin, Sakit) Karyawan
+            </h3>
+            <p class="admin-card-desc mb-0" id="readinessSubTitle" style="font-size: 0.78rem; color: #64748b;">
+                Periode Jadwal Kerja: <strong id="readinessRangeText" style="color: #0f172a;">@Model?.PreviewStartDate.ToString("dd MMM yyyy") – @Model?.PreviewEndDate.ToString("dd MMM yyyy") (Durasi @(((Model?.PreviewEndDate.Date - Model?.PreviewStartDate.Date)?.Days + 1) ?? 14) Hari)</strong>
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap" id="readinessStatBadges">
+            <span class="status-pill pill-role" style="font-size: 0.75rem; font-weight: 600;">
+                <i class="fas fa-users me-1 text-teal"></i> <span id="badgeTotalStaff">@Model?.TotalActiveEmployees</span> Karyawan Aktif
+            </span>
+            <span id="badgeWithLeaveWrapper">
+                @if ((Model?.TotalEmployeesWithLeave ?? 0) > 0)
+                {
+                    <span class="status-pill" id="badgeWithLeave" style="background: #fee2e2; color: #991b1b; font-size: 0.75rem; font-weight: 600;">
+                        <i class="fas fa-envelope-open-text me-1"></i> @Model?.TotalEmployeesWithLeave Karyawan Mengajukan Dispensasi (Cuti / Izin / Sakit)
+                    </span>
+                }
+                else
+                {
+                    <span class="status-pill pill-active" id="badgeWithLeave" style="font-size: 0.75rem; font-weight: 600;">
+                        <i class="fas fa-check-circle me-1"></i> Seluruh Karyawan Siap Bertugas
+                    </span>
+                }
+            </span>
+        </div>
+    </div>
+
+    <!-- Notice Bar: Ketentuan Pengalihan Dispensasi ke Hari Libur -->
+    <div class="py-2 px-4 d-flex align-items-center gap-2" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.78rem;">
+        <span class="d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px; background: #e0f2fe; color: #0284c7; border-radius: 50%; flex-shrink: 0;">
+            <i class="fas fa-shield-halved" style="font-size: 0.72rem;"></i>
+        </span>
+        <span class="text-dark">
+            <strong style="color: #0f172a;">Ketentuan Sistem:</strong> Pengajuan dispensasi (Cuti, Izin, atau Sakit) karyawan yang berstatus <span class="badge bg-success" style="font-size: 0.68rem; font-weight: 600; padding: 2px 6px;">Disetujui</span> otomatis dialokasikan sebagai <strong>Hari Libur (OFF)</strong>, sehingga karyawan tidak akan dijadwalkan masuk kerja pada tanggal bersangkutan.
+        </span>
+    </div>
+
+    <div class="admin-card-body p-0">
+        <div class="matrix-table-container" style="border: none; border-radius: 0; max-height: 540px;">
+            <table class="matrix-table" id="readinessMatrixTable">
+                <thead>
+                    <tr id="readinessMatrixHeadRow">
+                        <th class="matrix-no-col" style="width: 44px; min-width: 44px; text-align: center;">NO</th>
+                        <th class="emp-col" style="min-width: 195px;">NAMA KARYAWAN</th>
+                        @{
+                            var datesList = new List<DateTime>();
+                            if (Model != null && Model.PreviewStartDate != default && Model.PreviewEndDate != default && Model.PreviewEndDate >= Model.PreviewStartDate)
+                            {
+                                for (var d = Model.PreviewStartDate.Date; d <= Model.PreviewEndDate.Date; d = d.AddDays(1))
+                                {
+                                    datesList.Add(d);
+                                }
+                            }
+                        }
+                        @foreach (var dt in datesList)
+                        {
+                            <th class="date-col">
+                                @dt.ToString("ddd", new System.Globalization.CultureInfo("id-ID"))
+                                <small>@dt.ToString("dd/MM")</small>
+                            </th>
+                        }
+                        <th style="min-width: 85px; text-align: center;" title="Total hari karyawan bersedia bertugas">HARI TERSEDIA</th>
+                        <th style="min-width: 80px; text-align: center;" title="Total hari izin, cuti, atau sakit yang diajukan karyawan">TOTAL DISPENSASI</th>
+                        <th style="min-width: 95px; text-align: center;" title="Status ketersediaan kerja karyawan">STATUS</th>
+                    </tr>
+                </thead>
+                <tbody id="readinessTableBody">
+                    @if (Model?.EmployeeReadinessList != null && Model.EmployeeReadinessList.Any())
+                    {
+                        int no = 1;
+                        foreach (var emp in Model.EmployeeReadinessList)
+                        {
+                            var totalLeaves = emp.Leaves.Count;
+                            var readyDays = datesList.Count - totalLeaves;
+                            if (readyDays < 0) readyDays = 0;
+
+                            <tr>
+                                <td class="matrix-no-col" style="text-align: center; font-weight: 600; color: #64748b; background: #f8fafc;">@(no++)</td>
+                                <td class="emp-col">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="d-inline-flex align-items-center justify-content-center fw-bold" style="width: 26px; height: 26px; background: #e0e7ff; color: #3730a3; border-radius: 50%; font-size: 0.7rem;">
+                                                @(string.IsNullOrEmpty(emp.NamaLengkap) ? "?" : emp.NamaLengkap.Substring(0, 1).ToUpper())
+                                            </div>
+                                            <span style="font-weight: 600; color: #0f172a;">@emp.NamaLengkap</span>
+                                        </div>
+                                        @if (emp.Level == "Senior")
+                                        {
+                                            <span class="status-pill pill-role ms-1" style="font-size: 9px; padding: 1px 6px;">Senior</span>
+                                        }
+                                    </div>
+                                </td>
+                                @foreach (var dt in datesList)
+                                {
+                                    var leave = emp.Leaves.FirstOrDefault(l => l.RequestDate.Date == dt.Date);
+                                    if (leave != null)
+                                    {
+                                        var isApproved = leave.Status == "Approved";
+                                        var leaveType = string.IsNullOrWhiteSpace(leave.LeaveType) ? "Cuti" : leave.LeaveType;
+                                        var code = leaveType.ToUpper();
+                                        var reasonText = string.IsNullOrWhiteSpace(leave.Reason) ? "" : $" • Alasan: \"{leave.Reason}\"";
+
+                                        var badgeClass = "readiness-badge-cuti";
+                                        if (leaveType.Equals("Izin", StringComparison.OrdinalIgnoreCase)) badgeClass = "readiness-badge-izin";
+                                        else if (leaveType.Equals("Sakit", StringComparison.OrdinalIgnoreCase)) badgeClass = "readiness-badge-sakit";
+
+                                        if (isApproved)
+                                        {
+                                            <td class="readiness-cell readiness-cell-approved" 
+                                                title="[@leaveType Disetujui • Libur (OFF)] Tanggal: @dt.ToString("dd MMM yyyy")@reasonText">
+                                                <span class="@badgeClass">@code</span>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="readiness-cell readiness-cell-pending" 
+                                                title="[Pengajuan @leaveType Menunggu Persetujuan Manajer] Tanggal: @dt.ToString("dd MMM yyyy")@reasonText">
+                                                <span class="readiness-badge-pending">MENUNGGU</span>
+                                            </td>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <td class="readiness-cell readiness-cell-ready" 
+                                            title="Siap Bertugas: Tanggal @dt.ToString("dd MMM yyyy")">
+                                            <span class="text-muted fw-bold" style="font-size: 0.85rem;">-</span>
+                                        </td>
+                                    }
+                                }
+                                <td style="text-align: center; font-weight: 700; color: #0f766e; background: #f8fafc;" title="Total Hari Tersedia">
+                                    @readyDays Hari
+                                </td>
+                                <td style="text-align: center; background: #f8fafc;" title="Total Hari Dispensasi (Izin / Cuti / Sakit)">
+                                    @if (totalLeaves > 0)
+                                    {
+                                        <span class="badge bg-danger" style="font-size: 0.72rem; padding: 3px 7px;">@totalLeaves Hari Dispensasi</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fw-bold" style="font-size: 0.75rem;">-</span>
+                                    }
+                                </td>
+                                <td style="text-align: center; background: #f8fafc;">
+                                    @if (emp.HasApprovedLeave)
+                                    {
+                                        var appType = string.IsNullOrEmpty(emp.ApprovedLeaveType) ? "Dispensasi" : emp.ApprovedLeaveType;
+                                        <span class="status-pill" style="background: #fee2e2; color: #991b1b; font-size: 0.7rem; padding: 2px 6px;">
+                                            <i class="fas fa-calendar-xmark me-1"></i> Ada @appType Disetujui
+                                        </span>
+                                    }
+                                    else if (emp.HasPendingLeave)
+                                    {
+                                        <span class="status-pill pill-pending" style="font-size: 0.7rem; padding: 2px 6px;">
+                                            <i class="fas fa-clock me-1"></i> Menunggu Persetujuan
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill pill-active" style="font-size: 0.7rem; padding: 2px 6px;">
+                                            <i class="fas fa-circle-check me-1"></i> Tersedia Penuh
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="@(datesList.Count + 5)" class="text-center py-4 text-muted" style="font-size: 0.82rem;">
+                                <i class="fas fa-users-slash me-2 fa-lg"></i> Belum ada data karyawan aktif terdaftar.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Legend Footer -->
+    <div class="py-3 px-4" style="background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 0.78rem;">
+        <div class="mb-2 text-muted" style="font-size: 0.76rem;">
+            <strong class="text-slate-700">Catatan:</strong> Arahkan kursor ke tanggal untuk membaca rincian alasan dispensasi (izin, cuti, atau sakit) karyawan atau status ketersediaan kerja.
+        </div>
+        <div class="d-flex flex-column gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <div style="width: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start;">
+                    <span class="d-inline-flex align-items-center justify-content-center px-2 py-0.5 rounded fw-bold text-muted bg-white border" style="font-size: 0.82rem; min-width: 28px; height: 22px;">-</span>
+                </div>
+                <span class="text-slate-700">Siap Bertugas (Tidak sedang izin/cuti/sakit, siap dialokasikan giliran kerja)</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div style="width: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start;">
+                    <span class="readiness-badge-cuti px-2 py-0.5 rounded" style="font-weight: 700; font-size: 0.68rem;">CUTI</span>
+                </div>
+                <span class="text-slate-700">Cuti Disetujui (Cuti tahunan / bersama, otomatis libur kerja OFF)</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div style="width: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start;">
+                    <span class="readiness-badge-izin px-2 py-0.5 rounded" style="font-weight: 700; font-size: 0.68rem;">IZIN</span>
+                </div>
+                <span class="text-slate-700">Izin Disetujui (Izin keperluan pribadi / keluarga, otomatis libur kerja OFF)</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div style="width: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start;">
+                    <span class="readiness-badge-sakit px-2 py-0.5 rounded" style="font-weight: 700; font-size: 0.68rem;">SAKIT</span>
+                </div>
+                <span class="text-slate-700">Sakit Disetujui (Keterangan surat dokter, otomatis libur kerja OFF)</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div style="width: 100px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start;">
+                    <span class="readiness-badge-pending px-2 py-0.5 rounded" style="font-weight: 700; font-size: 0.68rem;">MENUNGGU</span>
+                </div>
+                <span class="text-slate-700">Dispensasi Menunggu Persetujuan (Pengajuan cuti/izin/sakit belum diverifikasi manajer)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border mb-3" style="width: 3.5rem; height: 3.5rem; color: #5eead4;" role="status"></div>
+    <h3 class="fw-bold mb-1" style="color: #ffffff;">Sedang Menyusun Jadwal...</h3>
+    <p class="text-white-50 mb-0" style="max-width: 440px; text-align: center; font-size: 0.85rem;">
+        Sistem sedang membagi giliran shift secara merata dan menyesuaikan dengan jadwal cuti seluruh karyawan.
+    </p>
+</div>
+
+@section Scripts {
+    <script>
+        function getSelectedWeeks() {
+            var opt = $('#actualDurationType').val();
+            if (opt === '1_Week') return 1;
+            if (opt === '2_Weeks') return 2;
+            var val = parseInt($('#customWeeksInput').val()) || 1;
+            return val;
+        }
+
+        function getWeeklyOffDays() {
+            var val = parseInt($('#maxOffDaysSlider').val()) || parseInt($('#maxOffDaysNum').val()) || 1;
+            if (val < 1) val = 1;
+            if (val > 4) val = 4;
+            return val;
+        }
+
+        function onWeeklyOffDaysInput(val) {
+            var v = parseInt(val) || 1;
+            if (v < 1) v = 1;
+            if (v > 4) v = 4;
+            $('#maxOffDaysSlider').val(v);
+            $('#maxOffDaysNum').val(v);
+            if ($('#weeklyOffBadge').length) {
+                $('#weeklyOffBadge').text(v + ' Hari / Minggu');
+            }
+            updateTotalOffCalculation();
+        }
+
+        function updateTotalOffCalculation() {
+            var weeklyOff = getWeeklyOffDays();
+            var weeks = getSelectedWeeks();
+            var totalOff = weeklyOff * weeks;
+            if ($('#totalOffDaysBadge').length) {
+                $('#totalOffDaysBadge').text(totalOff + ' Hari Libur');
+            }
+            if ($('#totalOffFormulaText').length) {
+                $('#totalOffFormulaText').text(weeklyOff + ' Hari/Minggu × ' + weeks + ' Minggu = ' + totalOff + ' Hari Libur Total');
+            }
+        }
+
+        function onDurationOptionChanged(opt) {
+            $('.duration-card').removeClass('selected');
+            if (opt === '1_Week') {
+                $('#card1_Week').addClass('selected');
+                $('#customWeeksContainer').slideUp(150);
+                $('#actualDurationType').val('1_Week');
+                updateTotalOffCalculation();
+                refreshEmployeeReadinessPreview();
+            } else if (opt === '2_Weeks') {
+                $('#card2_Weeks').addClass('selected');
+                $('#customWeeksContainer').slideUp(150);
+                $('#actualDurationType').val('2_Weeks');
+                updateTotalOffCalculation();
+                refreshEmployeeReadinessPreview();
+            } else if (opt === 'custom') {
+                $('#cardCustom').addClass('selected');
+                $('#customWeeksContainer').slideDown(150);
+                onCustomWeeksInput();
+            }
+        }
+
+        function onCustomWeeksInput() {
+            var val = parseInt($('#customWeeksInput').val()) || 1;
+            if (val < 1) val = 1;
+            if (val > 12) val = 12;
+            $('#customWeeksInput').val(val);
+
+            var days = val * 7;
+            $('#customDaysBadge').text(days + ' Hari');
+            $('#customCardDesc').text(val + ' Minggu (' + days + ' Hari)');
+            $('#actualDurationType').val(val + '_Weeks');
+            updateTotalOffCalculation();
+            refreshEmployeeReadinessPreview();
+        }
+
+        function adjustCustomWeeks(delta) {
+            var current = parseInt($('#customWeeksInput').val()) || 1;
+            var newVal = current + delta;
+            if (newVal >= 1 && newVal <= 12) {
+                $('#customWeeksInput').val(newVal);
+                onCustomWeeksInput();
+            }
+        }
+
+        function onMinSeniorInput(val) {
+            var num = parseInt(val) || 0;
+            if (num < 0) num = 0;
+            if (num > 5) num = 5;
+            $('#minSeniorInput').val(num);
+            $('#minSeniorBadge').text(num + ' Karyawan');
+        }
+
+        function adjustMinSenior(delta) {
+            var current = parseInt($('#minSeniorInput').val()) || 0;
+            var newVal = current + delta;
+            if (newVal >= 0 && newVal <= 5) {
+                onMinSeniorInput(newVal);
+            }
+        }
+
+        function applySuggestedDate(dateStr) {
+            $('#StartDate').val(dateStr);
+            refreshEmployeeReadinessPreview();
+            Swal.fire({
+                icon: 'success',
+                title: 'Tanggal Diterapkan!',
+                text: 'Tanggal mulai otomatis diatur ke ' + dateStr + ' (H+1 dari periode acuan).',
+                timer: 1600,
+                showConfirmButton: false
+            });
+        }
+
+        function onPreviousPeriodChanged(selectEl) {
+            var selectedOpt = selectEl.options[selectEl.selectedIndex];
+            var val = selectEl.value;
+            var nextStart = $(selectedOpt).data('nextstart');
+            var name = $(selectedOpt).data('name');
+            var status = $(selectedOpt).data('status');
+            var start = $(selectedOpt).data('start');
+            var end = $(selectedOpt).data('end');
+
+            if (val === "0") {
+                $('#historyPeriodPreviewBox').css({
+                    'background': '#f8fafc',
+                    'border-color': '#e2e8f0'
+                });
+                $('#historyStatusPill').removeClass('pill-active').addClass('status-pill');
+                $('#historyStatusText').text('Nonaktif');
+                $('#historyRangeText').text('-');
+                $('#historyNameText').text('Tanpa Acuan Riwayat');
+                $('#historyDescText').text('Jadwal baru akan disusun mandiri dari nol tanpa mempertimbangkan shift hari terakhir sebelumnya.');
+            } else {
+                $('#historyPeriodPreviewBox').css({
+                    'background': '#f0fdfa',
+                    'border-color': '#ccfbf1'
+                });
+                $('#historyStatusPill').removeClass('status-pill').addClass('status-pill pill-active');
+                $('#historyStatusText').text(status || 'Riwayat Terhubung');
+                $('#historyRangeText').text(start && end ? (start + ' – ' + end) : '');
+                $('#historyNameText').text(name || 'Riwayat Terpilih');
+                $('#historyDescText').text('Rotasi shift & jeda istirahat shift malam karyawan periode ini otomatis dilanjutkan ke periode baru.');
+
+                // Auto-set Tanggal Mulai secara otomatis tanpa perlu tombol manual
+                if (nextStart) {
+                    $('#StartDate').val(nextStart);
+                    refreshEmployeeReadinessPreview();
+                }
+            }
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function refreshEmployeeReadinessPreview() {
+            var startDate = $('#StartDate').val();
+            var weeks = getSelectedWeeks();
+            var days = weeks * 7;
+
+            if (!startDate) return;
+
+            $('#readinessTableBody').css('opacity', '0.4');
+
+            $.get('/Schedule/GetEmployeeReadiness', { startDate: startDate, days: days }, function(res) {
+                $('#readinessTableBody').css('opacity', '1');
+                if (res && res.success) {
+                    $('#readinessRangeText').text(res.rangeFormatted + ' (' + res.days + ' Hari)');
+                    $('#badgeTotalStaff').text(res.totalActive);
+                    
+                    if (res.withLeave > 0) {
+                        $('#badgeWithLeaveWrapper').html('<span class="status-pill" id="badgeWithLeave" style="background:#fee2e2; color:#991b1b; font-size:0.75rem; font-weight:600;"><i class="fas fa-envelope-open-text me-1"></i> ' + res.withLeave + ' Karyawan Mengajukan Dispensasi (Cuti / Izin / Sakit)</span>');
+                    } else {
+                        $('#badgeWithLeaveWrapper').html('<span class="status-pill pill-active" id="badgeWithLeave" style="font-size:0.75rem; font-weight:600;"><i class="fas fa-check-circle me-1"></i> Seluruh Karyawan Siap Bertugas</span>');
+                    }
+
+                    // Build array of dates
+                    var dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                    var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+                    var dates = [];
+                    var parts = res.startDate.split('-');
+                    var startYear = parseInt(parts[0], 10);
+                    var startMonth = parseInt(parts[1], 10) - 1;
+                    var startDay = parseInt(parts[2], 10);
+
+                    for (var i = 0; i < res.days; i++) {
+                        var cur = new Date(startYear, startMonth, startDay + i);
+                        var y = cur.getFullYear();
+                        var m = String(cur.getMonth() + 1).padStart(2, '0');
+                        var d = String(cur.getDate()).padStart(2, '0');
+                        var isoStr = y + '-' + m + '-' + d;
+                        var dayName = dayNames[cur.getDay()];
+                        var ddMM = d + '/' + m;
+                        var formattedDisplay = d + ' ' + monthNames[cur.getMonth()] + ' ' + y;
+
+                        dates.push({
+                            iso: isoStr,
+                            dayName: dayName,
+                            ddMM: ddMM,
+                            display: formattedDisplay
+                        });
+                    }
+
+                    // Build table header row
+                    var theadHtml = '<th class="matrix-no-col" style="width: 44px; min-width: 44px; text-align: center;">NO</th>' +
+                        '<th class="emp-col" style="min-width: 195px;">NAMA KARYAWAN</th>';
+
+                    dates.forEach(function(dt) {
+                        theadHtml += '<th class="date-col">' +
+                            dt.dayName +
+                            '<small>' + dt.ddMM + '</small>' +
+                            '</th>';
+                    });
+
+                    theadHtml += '<th style="min-width: 85px; text-align: center;" title="Total hari karyawan bersedia bertugas">HARI TERSEDIA</th>' +
+                        '<th style="min-width: 80px; text-align: center;" title="Total hari izin, cuti, atau sakit yang diajukan karyawan">TOTAL DISPENSASI</th>' +
+                        '<th style="min-width: 95px; text-align: center;" title="Status ketersediaan kerja karyawan">STATUS</th>';
+
+                    $('#readinessMatrixHeadRow').html(theadHtml);
+
+                    // Build table body rows
+                    var tbodyHtml = '';
+                    if (res.employees && res.employees.length > 0) {
+                        var no = 1;
+                        res.employees.forEach(function(emp) {
+                            var initial = emp.namaLengkap ? escHtml(emp.namaLengkap.charAt(0).toUpperCase()) : '?';
+                            var srBadge = emp.level === 'Senior' 
+                                ? '<span class="status-pill pill-role ms-1" style="font-size: 9px; padding: 1px 6px;">Senior</span>' 
+                                : '';
+                            
+                            // Map leaves by requestDate (iso format YYYY-MM-DD)
+                            var leaveMap = {};
+                            if (emp.leaves && emp.leaves.length > 0) {
+                                emp.leaves.forEach(function(l) {
+                                    leaveMap[l.requestDate] = l;
+                                });
+                            }
+                            
+                            var totalLeaves = (emp.leaves ? emp.leaves.length : 0);
+                            var readyDays = Math.max(0, dates.length - totalLeaves);
+
+                            tbodyHtml += '<tr>';
+                            tbodyHtml += '<td class="matrix-no-col" style="text-align: center; font-weight: 600; color: #64748b; background: #f8fafc;">' + (no++) + '</td>';
+                            tbodyHtml += '<td class="emp-col">' +
+                                '<div class="d-flex align-items-center justify-content-between">' +
+                                    '<div class="d-flex align-items-center gap-2">' +
+                                        '<div class="d-inline-flex align-items-center justify-content-center fw-bold" style="width: 26px; height: 26px; background: #e0e7ff; color: #3730a3; border-radius: 50%; font-size: 0.7rem;">' + initial + '</div>' +
+                                        '<span style="font-weight: 600; color: #0f172a;">' + escHtml(emp.namaLengkap) + '</span>' +
+                                    '</div>' +
+                                    srBadge +
+                                '</div>' +
+                            '</td>';
+
+                            dates.forEach(function(dt) {
+                                var leave = leaveMap[dt.iso];
+                                if (leave) {
+                                    var isApproved = leave.status === 'Approved';
+                                    var leaveType = escHtml(leave.leaveType || 'Cuti');
+                                    var code = leaveType.toUpperCase();
+                                    var reason = leave.reason ? ' • Alasan: "' + escHtml(leave.reason) + '"' : '';
+
+                                    var badgeClass = 'readiness-badge-cuti';
+                                    if (leaveType.toLowerCase() === 'izin') badgeClass = 'readiness-badge-izin';
+                                    else if (leaveType.toLowerCase() === 'sakit') badgeClass = 'readiness-badge-sakit';
+
+                                    if (isApproved) {
+                                        var title = '[' + leaveType + ' Disetujui • Libur (OFF)] Tanggal: ' + dt.display + reason;
+                                        tbodyHtml += '<td class="readiness-cell readiness-cell-approved" title="' + title + '">' +
+                                            '<span class="' + badgeClass + '">' + code + '</span>' +
+                                            '</td>';
+                                    } else {
+                                        var title = '[Pengajuan ' + leaveType + ' Menunggu Persetujuan Manajer] Tanggal: ' + dt.display + reason;
+                                        tbodyHtml += '<td class="readiness-cell readiness-cell-pending" title="' + title + '">' +
+                                            '<span class="readiness-badge-pending">MENUNGGU</span>' +
+                                            '</td>';
+                                    }
+                                } else {
+                                    var title = 'Siap Bertugas: Tanggal ' + dt.display;
+                                    tbodyHtml += '<td class="readiness-cell readiness-cell-ready" title="' + title + '">' +
+                                        '<span class="text-muted fw-bold" style="font-size: 0.85rem;">-</span>' +
+                                        '</td>';
+                                }
+                            });
+
+                            // Summary columns
+                            tbodyHtml += '<td style="text-align: center; font-weight: 700; color: #0f766e; background: #f8fafc;" title="Total Hari Tersedia">' + readyDays + ' Hari</td>';
+                            
+                            var cutiBadge = totalLeaves > 0 
+                                ? '<span class="badge bg-danger" style="font-size: 0.72rem; padding: 3px 7px;">' + totalLeaves + ' Hari Dispensasi</span>'
+                                : '<span class="text-muted fw-bold" style="font-size: 0.75rem;">-</span>';
+                            tbodyHtml += '<td style="text-align: center; background: #f8fafc;" title="Total Hari Dispensasi">' + cutiBadge + '</td>';
+
+                            var statusPill = '';
+                            if (emp.hasApprovedLeave) {
+                                var appType = emp.approvedLeaveType || 'Dispensasi';
+                                statusPill = '<span class="status-pill" style="background: #fee2e2; color: #991b1b; font-size: 0.7rem; padding: 2px 6px;"><i class="fas fa-calendar-xmark me-1"></i> Ada ' + escHtml(appType) + ' Disetujui</span>';
+                            } else if (emp.hasPendingLeave) {
+                                statusPill = '<span class="status-pill pill-pending" style="font-size: 0.7rem; padding: 2px 6px;"><i class="fas fa-clock me-1"></i> Menunggu Persetujuan</span>';
+                            } else {
+                                statusPill = '<span class="status-pill pill-active" style="font-size: 0.7rem; padding: 2px 6px;"><i class="fas fa-circle-check me-1"></i> Tersedia Penuh</span>';
+                            }
+                            tbodyHtml += '<td style="text-align: center; background: #f8fafc;">' + statusPill + '</td>';
+
+                            tbodyHtml += '</tr>';
+                        });
+                    } else {
+                        var colSpan = dates.length + 5;
+                        tbodyHtml = '<tr><td colspan="' + colSpan + '" class="text-center py-4 text-muted" style="font-size: 0.82rem;"><i class="fas fa-users-slash me-2 fa-lg"></i> Belum ada data karyawan aktif terdaftar.</td></tr>';
+                    }
+
+                    $('#readinessTableBody').html(tbodyHtml);
+                }
+            }).fail(function() {
+                $('#readinessTableBody').css('opacity', '1');
+            });
+        }
+
+        $(document).ready(function() {
+            var initialOffDays = parseInt($('#maxOffDaysSlider').val()) || parseInt($('#maxOffDaysNum').val()) || 1;
+            onWeeklyOffDaysInput(initialOffDays);
+
+            $('.duration-card').on('click', function() {
+                var radio = $(this).find('input[type="radio"]');
+                radio.prop('checked', true);
+                onDurationOptionChanged(radio.val());
+            });
+
+            $('#StartDate').on('change', function() {
+                refreshEmployeeReadinessPreview();
+            });
+
+            $('#generateForm').on('submit', function(e) {
+                if (this.checkValidity()) {
+                    $('#loadingOverlay').css('display', 'flex').hide().fadeIn(200);
+                    $('#btnSubmit').prop('disabled', true);
+                }
+            });
+        });
+    </script>
+}

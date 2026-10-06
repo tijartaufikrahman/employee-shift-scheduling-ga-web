@@ -1,0 +1,290 @@
+@using SistemPenjadwalanShiftGA.Models.ViewModels
+@{
+    bool isManager = User.IsInRole("Manager") || User.IsInRole("Admin");
+    ViewData["Title"] = isManager ? "Laporan Pengajuan" : "Pengajuan Izin";
+}
+
+<style>
+    .leave-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        text-decoration: none !important;
+    }
+    .leave-action-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+    }
+    .leave-action-view {
+        color: #0284c7;
+        background: #f0f9ff;
+        border-color: #bae6fd;
+    }
+    .leave-action-view:hover {
+        background: #0284c7;
+        color: #ffffff !important;
+        border-color: #0284c7;
+    }
+    .leave-action-edit {
+        color: #d97706;
+        background: #fffbeb;
+        border-color: #fde68a;
+    }
+    .leave-action-edit:hover {
+        background: #d97706;
+        color: #ffffff !important;
+        border-color: #d97706;
+    }
+    .leave-action-delete {
+        color: #dc2626;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+    .leave-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+    }
+</style>
+
+<!-- Leave Requests Admin Card -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div>
+            <h3 class="admin-card-title">@(isManager ? "Daftar Laporan Pengajuan" : "Daftar Pengajuan Izin")</h3>
+            <p class="admin-card-desc">@(isManager ? "Laporan pengajuan permohonan izin, sakit, dan cuti seluruh karyawan operasional" : "Histori pengajuan izin dan cuti beserta lampiran dokumen pendukung")</p>
+        </div>
+        @if(isManager)
+        {
+            <div class="d-flex align-items-center gap-1" id="leaveTabs">
+                <button type="button" class="btn-secondary-admin active" data-status="" style="font-size:0.75rem; padding:4px 10px;">Semua</button>
+                <button type="button" class="btn-secondary-admin text-warning" data-status="Pending" style="font-size:0.75rem; padding:4px 10px;">Pending</button>
+                <button type="button" class="btn-secondary-admin text-success" data-status="Approved" style="font-size:0.75rem; padding:4px 10px;">Disetujui</button>
+                <button type="button" class="btn-secondary-admin text-danger" data-status="Rejected" style="font-size:0.75rem; padding:4px 10px;">Ditolak</button>
+            </div>
+        }
+        else
+        {
+            <div>
+                <a href="/LeaveRequest/Create" class="btn-primary-admin">
+                    <i class="fas fa-plus"></i> Ajukan Izin Baru
+                </a>
+            </div>
+        }
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="admin-table-container p-3">
+            <table id="leaveTable" class="admin-table table table-hover dt-responsive nowrap w-100">
+                <thead>
+                    <tr>
+                        <th style="width:60px;" class="text-center">NO</th>
+                        @if(isManager) { <th>KARYAWAN</th> }
+                        <th>TIPE IZIN</th>
+                        <th>TANGGAL PENGAJUAN</th>
+                        <th>ALASAN</th>
+                        <th>STATUS</th>
+                        <th>LAMPIRAN</th>
+                        <th style="width: 1%; white-space: nowrap; text-align: center;">AKSI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<form id="antiForgeryForm" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        var isManager = @isManager.ToString().ToLower();
+        var leaveTable;
+        var currentStatus = '';
+
+        $(document).ready(function () {
+            initTable();
+
+            $('#leaveTabs button').on('click', function(e) {
+                e.preventDefault();
+                $('#leaveTabs button').removeClass('active btn-primary-admin').addClass('btn-secondary-admin');
+                $(this).removeClass('btn-secondary-admin').addClass('btn-primary-admin');
+                currentStatus = $(this).data('status');
+                leaveTable.ajax.reload();
+            });
+        });
+
+        function initTable() {
+            var cols = [
+                {
+                    data: 'no',
+                    orderable: true,
+                    searchable: false,
+                    className: 'text-center',
+                    width: '60px',
+                    render: function (data, type, row) {
+                        return '<span class="fw-bold text-muted" style="font-size: 0.82rem;">' + data + '</span>';
+                    }
+                }
+            ];
+            if(isManager) {
+                cols.push({ 
+                    data: 'employeeName', 
+                    render: function(d) { 
+                        return '<strong style="color:#0f172a;"><i class="fas fa-user me-1 text-muted"></i>' + escHtml(d) + '</strong>'; 
+                    } 
+                });
+            }
+            
+            cols.push(
+                { 
+                    data: 'leaveType',
+                    render: function(data) {
+                        if(data === 'Cuti') return '<span class="status-pill pill-role"><i class="fas fa-umbrella-beach me-1"></i>Cuti</span>';
+                        if(data === 'Sakit') return '<span class="status-pill pill-inactive"><i class="fas fa-briefcase-medical me-1"></i>Sakit</span>';
+                        return '<span class="status-pill pill-izin"><i class="fas fa-user-clock me-1"></i>Izin</span>';
+                    }
+                },
+                { 
+                    data: 'requestDate',
+                    render: function(data, type) {
+                        if (type === 'sort' || type === 'type') return data;
+                        if (!data) return '-';
+                        var d = new Date(data);
+                        return '<span style="font-weight:600; color:#334155;"><i class="fas fa-calendar-day me-1 text-teal"></i>' + d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>';
+                    }
+                },
+                { 
+                    data: 'reason',
+                    render: function(data) {
+                        if (!data) return '-';
+                        return data.length > 40 ? escHtml(data.substring(0, 40)) + '...' : escHtml(data);
+                    }
+                },
+                { 
+                    data: 'status',
+                    render: function(data) {
+                        if(data === 'Approved') return '<span class="status-pill pill-active"><span class="dot-indicator"></span>Disetujui</span>';
+                        if(data === 'Rejected') return '<span class="status-pill pill-inactive"><span class="dot-indicator"></span>Ditolak</span>';
+                        return '<span class="status-pill pill-pending"><span class="dot-indicator"></span>Pending</span>';
+                    }
+                },
+                { 
+                    data: 'attachmentsCount',
+                    render: function(data) {
+                        return data > 0 ? '<span class="code-tag"><i class="fas fa-paperclip me-1 text-teal"></i>' + data + ' File</span>' : '<span class="text-muted">-</span>';
+                    }
+                },
+                { 
+                    data: 'id',
+                    orderable: false,
+                    className: 'text-center',
+                    render: function(data, type, row) {
+                        var html = '<div class="d-inline-flex align-items-center gap-2 justify-content-center">';
+                        
+                        // Tombol Lihat (Selalu tampil untuk Manager & Karyawan)
+                        html += '<a href="/LeaveRequest/Detail/' + data + '" class="leave-action-btn leave-action-view" title="Lihat Detail Permohonan">' +
+                                '<i class="fas fa-eye"></i>' +
+                                '</a>';
+                        
+                        // Tombol Hapus (Manager: selalu bisa hapus; Karyawan: hanya bisa hapus jika belum divalidasi)
+                        if (row.canDelete) {
+                            html += '<button type="button" class="leave-action-btn leave-action-delete" onclick="deleteLeave(' + data + ')" title="Hapus Pengajuan">' +
+                                    '<i class="fas fa-trash-can"></i>' +
+                                    '</button>';
+                        }
+                        
+                        html += '</div>';
+                        return html;
+                    }
+                }
+            );
+
+            leaveTable = $('#leaveTable').DataTable({
+                ajax: { 
+                    url: '/LeaveRequest/GetListData',
+                    type: 'GET',
+                    data: function(d) {
+                        d.status = currentStatus;
+                    },
+                    dataSrc: function (json) {
+                        var arr = json.data || [];
+                        for (var i = 0; i < arr.length; i++) {
+                            arr[i].no = i + 1;
+                        }
+                        return arr;
+                    }
+                },
+                order: [[isManager ? 3 : 2, "desc"]],
+                columns: cols,
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ pengajuan",
+                    infoEmpty: "Tidak ada data izin",
+                    zeroRecords: "Pengajuan tidak ditemukan",
+                    paginate: {
+                        first: "«",
+                        previous: "‹",
+                        next: "›",
+                        last: "»"
+                    }
+                }
+            });
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return $('<div>').text(str).html();
+        }
+
+        function deleteLeave(id) {
+            Swal.fire({
+                title: 'Hapus Data Izin / Cuti?',
+                text: 'Data permohonan izin ini beserta dokumen lampirannya akan dihapus permanen dari sistem.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+                    $.ajax({
+                        url: '/LeaveRequest/Delete/' + id,
+                        type: 'POST',
+                        data: { __RequestVerificationToken: token },
+                        success: function(res) {
+                            if (res.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil Dihapus!',
+                                    text: res.message,
+                                    timer: 1600,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    leaveTable.ajax.reload();
+                                });
+                            } else {
+                                Swal.fire('Gagal!', res.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Gagal!', 'Terjadi kesalahan komunikasi dengan server.', 'error');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+}
