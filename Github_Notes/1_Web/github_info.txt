@@ -1,0 +1,12 @@
+Nama Repository : employee-shift-scheduling-ga-web
+URL Repository  : https://github.com/tijartaufikrahman/employee-shift-scheduling-ga-web.git
+Deskripsi       : Modern ASP.NET Core 8 MVC web application for automated employee shift scheduling using Genetic Algorithm (GA), featuring operational constraint rules, leave & sick permit workflows, PDF schedule export with QR code verification, and role-based access control.
+
+Perintah Git Bash (Tinggal Copas):
+cd "C:/Programing/Github Project/SistemPenjadwalan/SistemPenjadwalanShiftAlgoritmaGenetika"
+git init
+git add .
+git commit -m "feat: initial commit for employee-shift-scheduling-ga-web"
+git branch -M main
+git remote add origin https://github.com/tijartaufikrahman/employee-shift-scheduling-ga-web.git
+git push -u origin main

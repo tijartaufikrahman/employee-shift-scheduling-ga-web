@@ -1,0 +1,32 @@
+
+# Judul : Sistem Penjadwalan Shift Karyawan: Otomasi Algoritma Genetika
+
+# Roles : Software Engineer 
+
+# Independent Project
+
+# apa yg dikerjakan : 
+	✔ Merancang dan membangun arsitektur aplikasi web MVC (Model-View-Controller) menggunakan C# ASP.NET Core (.NET 8) dengan pola Repository & Service Pattern agar logika bisnis dan database SQL Server terstruktur secara rapi.
+	✔ Mengembangkan mesin optimasi Algoritma Genetika untuk memecahkan konflik jadwal kerja dan menghasilkan penempatan shift yang optimal.
+	✔ Menanamkan batasan operasional ke dalam algoritma: melarang rotasi shift malam langsung ke pagi, menjaga keteraturan pola penugasan, serta mendistribusikan jatah libur mingguan secara otomatis untuk mencegah penumpukan hari libur yang bersamaan.
+	✔ Mengintegrasikan data pengajuan cuti dan sakit yang sah agar karyawan yang bersangkutan secara otomatis tidak dimasukkan ke dalam jadwal kerja.
+	✔ Membangun modul permohonan cuti dan izin berbasis web dengan fitur upload bukti berkas (surat dokter) beserta alur persetujuan langsung oleh manajer.
+	✔ Mengintegrasikan fitur cetak dokumen resmi jadwal kerja format PDF (QuestPDF) dengan sistem verifikasi kode QR unik untuk mencegah pemalsuan berkas.
+	✔ Menerapkan sistem keamanan akun dengan enkripsi password BCrypt, reset password via email, dan pembagian hak akses antara Manajer dan Karyawan.
+
+# Tujuan : 
+	- Mengatur pembagian jadwal libur karyawan secara bergantian agar operasional tetap berjalan lancar tanpa henti.
+	- Menghilangkan risiko kekurangan staf operasional dengan memastikan setiap shift selalu terisi sesuai kuota kebutuhan.
+	- Mencegah miskomunikasi jadwal kerja dengan menyinkronkan data cuti atau izin sakit yang sudah disetujui secara langsung ke pembuatan jadwal.
+
+# tech stack/teknologi : 
+	- Full Stack & Security : C#, ASP.NET Core (.NET 8 MVC), Bootstrap 5, jQuery, JWT Authentication
+	- Algorithm : Algoritma Genetika (Genetic Algorithm)
+	- Database : SQL Server (MSSQL)
+	- Cloud & Infrastructure : Contabo VPS 
+
+# Github : 
+	- https://github.com/tijartaufikrahman/SistemPenjadwalanShiftAlgoritmaGenetika
+
+# Link website : 
+	- http://62.171.169.192:9008/
