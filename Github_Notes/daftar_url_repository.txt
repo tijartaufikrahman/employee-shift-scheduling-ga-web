@@ -6,7 +6,8 @@ LIST URL REPOSITORY GITHUB - SISTEM PENJADWALAN SHIFT (ALGORITMA GENETIKA)
    - Nama Repository : employee-shift-scheduling-ga-web
    - URL Repository  : https://github.com/tijartaufikrahman/employee-shift-scheduling-ga-web.git
    - URL Web GitHub  : https://github.com/tijartaufikrahman/employee-shift-scheduling-ga-web
-   - Status          : Siap dipush ke 'main'
+   - Branch          : main
+   - Status          : BERHASIL DIBUAT & SUDAH DIPUSH (LIVE & PUBLIC)
    - Lokasi Proyek   : C:/Programing/Github Project/SistemPenjadwalan/SistemPenjadwalanShiftAlgoritmaGenetika
 
 ================================================================================
