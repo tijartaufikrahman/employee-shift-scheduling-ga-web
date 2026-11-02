@@ -1,6 +1,6 @@
 @model SistemPenjadwalanShiftGA.Models.ViewModels.LoginViewModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Masuk - SisJad Portal Kerja";
     Layout = null;
 }
 
@@ -9,151 +9,566 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6e4b">
+    <title>Masuk - SisJad Portal Kerja</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        :root {
+            /* Tema Hijau Menenangkan (Sage & Deep Forest) - Segar, Nyaman, Bukan Dark Mode */
+            --bg-canvas: #edf3ef;
+            --bg-card: #ffffff;
+            --bg-panel: #ffffff;
+            --bg-input: #f8faf8;
+            
+            --border-main: #d3e2d9;
+            --border-card: #d9e6df;
+            --border-subtle: #ebf2ee;
+            --border-input: #c7dcd1;
+            --border-focus: #0d6e4b;
+            
+            --forest-primary: #0d6e4b;
+            --forest-dark: #084c33;
+            --forest-soft: #e2f1e9;
+            --forest-chip: #edf7f2;
+            
+            --text-heading: #122b22;
+            --text-body: #294c3e;
+            --text-muted: #56796c;
+            --text-dim: #769a8d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            background: var(--bg-canvas);
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
+            color: var(--text-body);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .portal-layout {
+            display: flex;
+            height: 100vh;
+            max-height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* =====================================================================
+           SEKSI KIRI: SHOWCASE OPERASIONAL (70% WIDTH - 1 LAYAR TANPA SCROLL)
+           ===================================================================== */
+        .showcase-pane {
+            flex: 0 0 70%;
+            width: 70%;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            padding: 38px 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: 
+                radial-gradient(circle at 12% 15%, rgba(13, 110, 75, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 88% 85%, rgba(8, 76, 51, 0.05) 0%, transparent 50%),
+                var(--bg-canvas);
+            border-right: 1px solid var(--border-main);
+        }
+
+        .showcase-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-cluster {
+            display: inline-flex;
+            align-items: center;
+            gap: 13px;
+            text-decoration: none;
+        }
+
+        .brand-monogram {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0d6e4b 0%, #084c33 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #eef7f5;
-            background-image:
-                radial-gradient(circle at 20% 30%, rgba(45, 212, 191, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(56, 189, 248, 0.12) 0%, transparent 50%),
-                radial-gradient(circle at 50% 100%, rgba(13, 148, 136, 0.08) 0%, transparent 40%);
-            padding: 20px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            box-shadow: 0 4px 12px rgba(13, 110, 75, 0.2);
         }
-        .login-wrapper { width: 100%; max-width: 420px; position: relative; }
-        .login-wrapper::before, .login-wrapper::after {
-            content: ''; position: fixed; border-radius: 50%; opacity: 0.07; pointer-events: none; z-index: 0;
+
+        .brand-text-block {
+            display: flex;
+            flex-direction: column;
         }
-        .login-wrapper::before { width: 300px; height: 300px; background: #0d9488; top: -80px; right: -100px; }
-        .login-wrapper::after { width: 200px; height: 200px; background: #38bdf8; bottom: -60px; left: -80px; }
-        .login-card {
-            position: relative; z-index: 1; background: #ffffff; border-radius: 20px;
-            box-shadow: 0 1px 3px rgba(15,23,42,.04), 0 10px 40px rgba(15,23,42,.08);
-            padding: 44px 36px 36px; width: 100%; border: 1px solid rgba(15,23,42,.06);
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-heading);
+            letter-spacing: -0.03em;
+            line-height: 1.1;
         }
-        @@media (max-width:480px) {
-            body { padding: 12px; }
-            .login-card { padding: 32px 22px 28px; border-radius: 16px; }
+
+        .brand-sub {
+            font-size: 11.5px;
+            color: var(--forest-primary);
+            font-weight: 600;
+            letter-spacing: 0.01em;
         }
-        .login-header { text-align: center; margin-bottom: 32px; }
-        .login-header .logo {
-            width: 68px; height: 68px;
-            background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%);
-            border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 18px; box-shadow: 0 8px 24px rgba(13,148,136,.25);
-            transform: rotate(-3deg); transition: transform .3s ease;
+
+        .showcase-content {
+            margin: auto 0;
+            max-width: 760px;
         }
-        .login-header .logo:hover { transform: rotate(0deg) scale(1.05); }
-        .login-header .logo i { font-size: 30px; color: #fff; }
-        .login-header h1 { font-size: 22px; color: #0f172a; margin-bottom: 4px; font-weight: 700; letter-spacing: -.02em; }
-        .login-header p { color: #64748b; font-size: 13.5px; }
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 7px; }
-        .input-wrapper { position: relative; }
-        .input-wrapper i.fi { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 15px; transition: color .2s; }
-        .input-wrapper:focus-within i.fi { color: #0d9488; }
-        .form-group input[type=email], .form-group input[type=password], .form-group input[type=text] {
-            width: 100%; padding: 12px 14px 12px 42px; border: 1.5px solid #e2e8f0;
-            border-radius: 12px; font-size: 14px; color: #1e293b; background: #f8fafc;
-            transition: all .2s; outline: none;
+
+        .hero-heading {
+            font-size: clamp(28px, 3.2vw, 42px);
+            font-weight: 800;
+            line-height: 1.22;
+            letter-spacing: -0.035em;
+            color: var(--text-heading);
+            margin-bottom: 12px;
         }
-        .form-group input:focus { border-color: #2dd4bf; background: #fff; box-shadow: 0 0 0 3px rgba(45,212,191,.15); }
-        .form-group input::placeholder { color: #94a3b8; }
-        .form-check { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .form-check input { width: auto; padding: 0; accent-color: #0d9488; }
-        .form-check label { font-size: 13px; color: #64748b; font-weight: 400; margin: 0; }
-        .forgot-link { text-align: right; margin-bottom: 18px; }
-        .forgot-link a { color: #0d9488; font-size: 12.5px; text-decoration: none; font-weight: 500; }
-        .forgot-link a:hover { text-decoration: underline; }
-        .btn-login {
-            width: 100%; padding: 13px; background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%);
-            color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 600;
-            cursor: pointer; transition: all .25s; display: flex; align-items: center;
-            justify-content: center; gap: 8px; margin-top: 4px;
-            box-shadow: 0 4px 14px rgba(13,148,136,.3);
+
+        .hero-heading span {
+            color: var(--forest-primary);
         }
-        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,148,136,.4); }
-        .btn-login:active { transform: translateY(0); }
-        .error-msg {
-            background: #fef2f2; color: #dc2626; padding: 11px 14px;
-            border-radius: 10px; font-size: 13px; margin-bottom: 16px;
-            border: 1px solid #fecaca; display: flex; align-items: center; gap: 8px;
+
+        .hero-summary {
+            font-size: clamp(13.5px, 1.05vw, 15px);
+            color: var(--text-muted);
+            line-height: 1.65;
+            margin-bottom: 24px;
+            max-width: 680px;
         }
-        .success-msg {
-            background: #f0fdf4; color: #166534; padding: 11px 14px;
-            border-radius: 10px; font-size: 13px; margin-bottom: 16px;
-            border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 8px;
+
+        /* Editorial Text Features (Pure Text) */
+        .text-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            max-width: 660px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-main);
         }
-        .validation-summary-errors { display: none; }
-        .login-footer { text-align: center; margin-top: 20px; font-size: 11.5px; color: #94a3b8; }
+
+        .text-feature-item {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .text-feature-title {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text-heading);
+            letter-spacing: -0.015em;
+        }
+
+        .text-feature-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .showcase-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-main);
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        /* =====================================================================
+           SEKSI KANAN: FORM LOGIN (30% WIDTH - Rich Forest Slate Theme)
+           ===================================================================== */
+        .auth-pane {
+            flex: 0 0 30%;
+            width: 30%;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            background: #142a22;
+            padding: 42px 36px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 1px solid rgba(13, 110, 75, 0.25);
+            box-shadow: -4px 0 20px rgba(18, 43, 34, 0.08);
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .auth-heading {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .auth-subheading {
+            font-size: 13px;
+            color: #9ecab6;
+            margin-bottom: 22px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #d1fae5;
+            margin-bottom: 6px;
+        }
+
+        .input-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon-left {
+            position: absolute;
+            left: 14px;
+            color: #6c9886;
+            font-size: 13px;
+            pointer-events: none;
+            transition: color 0.15s ease;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 44px;
+            background: #0c1e18;
+            border: 1.5px solid #234d3f;
+            border-radius: 9px;
+            padding: 0 38px 0 40px;
+            color: #ffffff;
+            font-size: 13.5px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .form-input:focus {
+            border-color: #34d399;
+            box-shadow: 0 0 0 3.5px rgba(52, 211, 153, 0.18);
+            background: #081712;
+        }
+
+        .input-box:focus-within .input-icon-left {
+            color: #34d399;
+        }
+
+        .btn-eye-toggle {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #6c9886;
+            cursor: pointer;
+            padding: 6px;
+            font-size: 13.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease;
+        }
+
+        .btn-eye-toggle:hover {
+            color: #ffffff;
+        }
+
+        .options-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 8px 0 20px;
+            font-size: 12.5px;
+        }
+
+        .remember-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            color: #cde8dc;
+            user-select: none;
+        }
+
+        .remember-wrap input {
+            accent-color: #10b981;
+            cursor: pointer;
+            width: 15px;
+            height: 15px;
+        }
+
+        .forgot-link {
+            color: #34d399;
+            text-decoration: none;
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+            color: #6ee7b7;
+        }
+
+        .btn-signin {
+            width: 100%;
+            height: 44px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+            transition: opacity 0.15s ease, transform 0.05s ease;
+        }
+
+        .btn-signin:hover {
+            opacity: 0.95;
+        }
+
+        .btn-signin:active {
+            transform: scale(0.99);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.16);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.16);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #a7f3d0;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .auth-footer {
+            margin-top: 24px;
+            font-size: 11.5px;
+            color: #6c9886;
+            text-align: center;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
-    <div class="login-wrapper">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="logo"><i class="fas fa-calendar-alt"></i></div>
-                <h1>Sistem Penjadwalan</h1>
-                <p>Masuk ke akun Anda</p>
-            </div>
+    <div class="portal-layout">
+        <!-- ================================================================== -->
+        <!-- SEKSI KIRI: SHOWCASE OPERASIONAL (70% WIDTH) -->
+        <!-- ================================================================== -->
+        <main class="showcase-pane">
+            <header class="showcase-top">
+                <a href="/" class="brand-cluster">
+                    <div class="brand-monogram">SJ</div>
+                    <div class="brand-text-block">
+                        <span class="brand-title">SisJad</span>
+                        <span class="brand-sub">Sistem Penjadwalan Kerja</span>
+                    </div>
+                </a>
+            </header>
 
-            @if (TempData["ResetSuccess"] != null)
-            {
-                <div class="success-msg"><i class="fas fa-check-circle"></i> @TempData["ResetSuccess"]</div>
-            }
+            <section class="showcase-content">
+                <h1 class="hero-heading">
+                    Sistem Penjadwalan Shift<br>
+                    <span>Operasional Karyawan.</span>
+                </h1>
+                <p class="hero-summary">
+                    Portal terpadu untuk melihat jadwal kerja harian, mengelola rotasi shift tim, dan mendukung koordinasi operasional yang teratur setiap hari.
+                </p>
 
-            @if (!ViewData.ModelState.IsValid)
-            {
-                foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                <!-- Simple General Highlights -->
+                <div class="text-features">
+                    <div class="text-feature-item">
+                        <h3 class="text-feature-title">Jadwal Kerja Terpadu</h3>
+                        <p class="text-feature-desc">
+                            Akses mudah ke informasi penugasan shift harian bagi seluruh anggota tim dalam satu sistem terpusat.
+                        </p>
+                    </div>
+
+                    <div class="text-feature-item">
+                        <h3 class="text-feature-title">Koordinasi Operasional</h3>
+                        <p class="text-feature-desc">
+                            Mendukung keterbukaan pembagian tugas kerja agar operasional layanan harian berjalan lancar dan teratur.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="showcase-footer">
+                <div>&copy; 2026 SisJad &bull; Sistem Informasi Penjadwalan Kerja</div>
+                <div>Akses Portal Operasional Terintegrasi</div>
+            </footer>
+        </main>
+
+        <!-- ================================================================== -->
+        <!-- SEKSI KANAN: FORM LOGIN (30% WIDTH) -->
+        <!-- ================================================================== -->
+        <aside class="auth-pane">
+            <div class="auth-box">
+                <header>
+                    <h2 class="auth-heading">Masuk ke Sistem</h2>
+                    <p class="auth-subheading">Masukkan email dan kata sandi Anda untuk melanjutkan.</p>
+                </header>
+
+                @if (TempData["ResetSuccess"] != null)
                 {
-                    <div class="error-msg"><i class="fas fa-exclamation-circle"></i> @error.ErrorMessage</div>
+                    <div class="alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <span>@TempData["ResetSuccess"]</span>
+                    </div>
                 }
-            }
 
-            <form asp-action="Login" asp-controller="Account" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <div class="alert-error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>@error.ErrorMessage</span>
+                        </div>
+                    }
+                }
 
-                <div class="form-group">
-                    <label asp-for="Email">Email</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope fi"></i>
-                        <input asp-for="Email" type="email" placeholder="Masukkan email" autocomplete="email" value="manager@sistem.com" />
+                <form asp-action="Login" asp-controller="Account" method="post" id="loginForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                    <div class="form-group">
+                        <label class="field-label" for="inputEmail">Alamat Email</label>
+                        <div class="input-box">
+                            <i class="fas fa-envelope input-icon-left"></i>
+                            <input name="Email" 
+                                   type="email" 
+                                   class="form-input" 
+                                   placeholder="nama@perusahaan.com" 
+                                   autocomplete="email" 
+                                   id="inputEmail"
+                                   value="@(string.IsNullOrEmpty(Model?.Email) ? "manager@sistem.com" : Model.Email)"
+                                   required />
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label asp-for="Password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock fi"></i>
-                        <input asp-for="Password" type="password" placeholder="Masukkan password" autocomplete="current-password" id="pwdInput" value="password123"/>
+                    <div class="form-group">
+                        <label class="field-label" for="inputPassword">Kata Sandi</label>
+                        <div class="input-box">
+                            <i class="fas fa-lock input-icon-left"></i>
+                            <input name="Password" 
+                                   type="password" 
+                                   class="form-input" 
+                                   placeholder="Masukkan kata sandi" 
+                                   autocomplete="current-password" 
+                                   id="inputPassword"
+                                   value="password123"
+                                   required />
+                            <button type="button" class="btn-eye-toggle" id="togglePasswordBtn" title="Lihat kata sandi" tabindex="-1">
+                                <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-                    <div class="form-check">
-                        <input asp-for="RememberMe" type="checkbox" id="rememberMe" />
-                        <label for="rememberMe">Ingat saya</label>
+                    <div class="options-bar">
+                        <label class="remember-wrap">
+                            <input asp-for="RememberMe" type="checkbox" id="checkRememberMe" />
+                            <span>Ingat saya</span>
+                        </label>
+                        <a asp-action="ForgotPassword" asp-controller="Account" class="forgot-link">Lupa kata sandi?</a>
                     </div>
-                    <div class="forgot-link" style="margin:0;">
-                        <a asp-action="ForgotPassword" asp-controller="Account">Lupa password?</a>
-                    </div>
-                </div>
 
-                <button type="submit" class="btn-login">
-                    <i class="fas fa-arrow-right-to-bracket"></i> Masuk
-                </button>
-            </form>
-        </div>
-        <div class="login-footer">Sistem Penjadwalan &copy; 2026</div>
+                    <button type="submit" class="btn-signin" id="submitBtn">
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        <span>Masuk ke Akun</span>
+                    </button>
+                </form>
+
+                <footer class="auth-footer">
+                    Portal operasional khusus personel terotorisasi.<br/>
+                    Keamanan data terenkripsi.
+                </footer>
+            </div>
+        </aside>
     </div>
+
+    <script>
+        const toggleBtn = document.getElementById('togglePasswordBtn');
+        const pwdInput = document.getElementById('inputPassword');
+        const pwdIcon = document.getElementById('togglePasswordIcon');
+
+        if (toggleBtn && pwdInput && pwdIcon) {
+            toggleBtn.addEventListener('click', function () {
+                const isPassword = pwdInput.getAttribute('type') === 'password';
+                pwdInput.setAttribute('type', isPassword ? 'text' : 'password');
+                pwdIcon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+            });
+        }
+
+        // Otomatis terisi akun Manager
+        const initialEmail = document.getElementById('inputEmail');
+        const initialPwd = document.getElementById('inputPassword');
+        if (initialEmail && !initialEmail.value) initialEmail.value = 'manager@sistem.com';
+        if (initialPwd && !initialPwd.value) initialPwd.value = 'password123';
+
+        const loginForm = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        if (loginForm && submitBtn) {
+            loginForm.addEventListener('submit', function () {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            });
+        }
+    </script>
 </body>
 </html>
