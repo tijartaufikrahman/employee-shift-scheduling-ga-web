@@ -1,0 +1,126 @@
+================================================================================
+           DAFTAR AKUN USER LOGIN (DEFAULT SEED DATA)
+           SISTEM PENJADWALAN SHIFT KERJA (ALGORITMA GENETIKA)
+================================================================================
+
+Password Default untuk SEMUA akun di bawah ini:
+password123
+
+Hash BCrypt di Database:
+$2a$11$93mOPK/u6I2lupLLDEggA.2nr.JLS0iDY0kGbUBdTGhzoJu8vMtaq
+
+================================================================================
+1. AKUN MANAGER / ADMINISTRATOR
+================================================================================
+No  : 1
+Nama: Budi Santoso (Manager)
+Email: manager@sistem.com
+Password: password123
+Role: Manager (Role ID: 1)
+Level: Senior
+No HP: 081234567890
+Status: Aktif
+
+================================================================================
+2. AKUN KARYAWAN (SENIOR)
+================================================================================
+No  : 2
+Nama: Rian Pratama
+Email: rian@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Senior
+No HP: 081234567891
+Status: Aktif
+
+No  : 3
+Nama: Siti Nurhaliza
+Email: siti@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Senior
+No HP: 081234567892
+Status: Aktif
+
+================================================================================
+3. AKUN KARYAWAN (JUNIOR)
+================================================================================
+No  : 4
+Nama: Ahmad Fauzi
+Email: ahmad@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567893
+Status: Aktif
+
+No  : 5
+Nama: Dewi Lestari
+Email: dewi@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567894
+Status: Aktif
+
+No  : 6
+Nama: Eko Prasetyo
+Email: eko@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567895
+Status: Aktif
+
+No  : 7
+Nama: Fani Rahmawati
+Email: fani@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567896
+Status: Aktif
+
+No  : 8
+Nama: Gilang Ramadhan
+Email: gilang@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567897
+Status: Aktif
+
+No  : 9
+Nama: Hani Handayani
+Email: hani@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567898
+Status: Aktif
+
+No  : 10
+Nama: Indra Kusuma
+Email: indra@sistem.com
+Password: password123
+Role: Karyawan (Role ID: 2)
+Level: Junior
+No HP: 081234567899
+Status: Aktif
+
+================================================================================
+RINGKASAN CEPAT (TABEL KREDENSIAL LOGIN):
+================================================================================
+| No | Nama Lengkap            | Email               | Password    | Role     | Level  |
+|----|-------------------------|---------------------|-------------|----------|--------|
+| 1  | Budi Santoso (Manager)  | manager@sistem.com  | password123 | Manager  | Senior |
+| 2  | Rian Pratama            | rian@sistem.com     | password123 | Karyawan | Senior |
+| 3  | Siti Nurhaliza          | siti@sistem.com     | password123 | Karyawan | Senior |
+| 4  | Ahmad Fauzi             | ahmad@sistem.com    | password123 | Karyawan | Junior |
+| 5  | Dewi Lestari            | dewi@sistem.com     | password123 | Karyawan | Junior |
+| 6  | Eko Prasetyo            | eko@sistem.com      | password123 | Karyawan | Junior |
+| 7  | Fani Rahmawati          | fani@sistem.com     | password123 | Karyawan | Junior |
+| 8  | Gilang Ramadhan         | gilang@sistem.com   | password123 | Karyawan | Junior |
+| 9  | Hani Handayani          | hani@sistem.com     | password123 | Karyawan | Junior |
+| 10 | Indra Kusuma            | indra@sistem.com    | password123 | Karyawan | Junior |
+================================================================================

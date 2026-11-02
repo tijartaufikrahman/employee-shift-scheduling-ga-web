@@ -497,7 +497,7 @@
                                    placeholder="nama@perusahaan.com" 
                                    autocomplete="email" 
                                    id="inputEmail"
-                                   value="@(string.IsNullOrEmpty(Model?.Email) ? "manager@sistem.com" : Model.Email)"
+                                   value="@Model?.Email"
                                    required />
                         </div>
                     </div>
@@ -512,7 +512,6 @@
                                    placeholder="Masukkan kata sandi" 
                                    autocomplete="current-password" 
                                    id="inputPassword"
-                                   value="password123"
                                    required />
                             <button type="button" class="btn-eye-toggle" id="togglePasswordBtn" title="Lihat kata sandi" tabindex="-1">
                                 <i class="fas fa-eye" id="togglePasswordIcon"></i>
@@ -555,11 +554,6 @@
             });
         }
 
-        // Otomatis terisi akun Manager
-        const initialEmail = document.getElementById('inputEmail');
-        const initialPwd = document.getElementById('inputPassword');
-        if (initialEmail && !initialEmail.value) initialEmail.value = 'manager@sistem.com';
-        if (initialPwd && !initialPwd.value) initialPwd.value = 'password123';
 
         const loginForm = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
