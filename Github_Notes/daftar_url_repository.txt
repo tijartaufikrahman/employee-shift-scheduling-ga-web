@@ -13,5 +13,6 @@ LIST URL REPOSITORY GITHUB - SISTEM PENJADWALAN SHIFT (ALGORITMA GENETIKA)
 ================================================================================
 Update Note Portofolio / CV:
 - Web App & Engine : https://github.com/tijartaufikrahman/employee-shift-scheduling-ga-web
-- Live Demo VPS    : http://62.171.169.192:9008/
+- Live Demo VPS    : http://62.171.169.192:20003/ (Portofolio Project 3)
+- Alternatif Port  : http://62.171.169.192:9008/
 ================================================================================
